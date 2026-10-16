@@ -1,0 +1,130 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { AdminShell } from "../AdminShell";
+import {
+  getModules,
+  saveModule,
+  deleteModule,
+  type SiteModule,
+} from "../store";
+import { useToast } from "../useToast";
+
+export default function ModulesPage() {
+  const [mods, setMods] = useState<SiteModule[]>([]);
+  const { show, node } = useToast();
+
+  function refresh() {
+    setMods(getModules());
+  }
+  useEffect(() => {
+    refresh();
+  }, []);
+
+  function update(mod: SiteModule, patch: Partial<SiteModule>) {
+    saveModule({ ...mod, ...patch });
+    refresh();
+    show("模块已更新");
+  }
+
+  function add(type: "nav" | "sidebar") {
+    const id = type + "-" + Date.now();
+    saveModule({
+      id,
+      type,
+      label: type === "nav" ? "新菜单" : "新卡片标题",
+      value: type === "nav" ? "/" : "卡片说明文字",
+      enabled: true,
+    });
+    refresh();
+    show("已添加模块");
+  }
+
+  function remove(id: string) {
+    if (confirm("确定删除这个模块吗？")) {
+      deleteModule(id);
+      refresh();
+      show("模块已删除");
+    }
+  }
+
+  const navMods = mods.filter((m) => m.type === "nav");
+  const sideMods = mods.filter((m) => m.type === "sidebar");
+
+  function renderCard(mod: SiteModule) {
+    return (
+      <div className="module-card" key={mod.id}>
+        <div className="mh">
+          <strong>{mod.label || "(未命名)"}</strong>
+          <span
+            className={`switch ${mod.enabled ? "" : "off"}`}
+            style={{ cursor: "pointer" }}
+            onClick={() => update(mod, { enabled: !mod.enabled })}
+          >
+            {mod.enabled ? "已启用" : "已隐藏"}
+          </span>
+        </div>
+        <div className="form-grid">
+          <div className="form-row" style={{ marginBottom: 0 }}>
+            <label>{mod.type === "nav" ? "菜单名称" : "卡片标题"}</label>
+            <input
+              value={mod.label}
+              onChange={(e) => update(mod, { label: e.target.value })}
+            />
+          </div>
+          <div className="form-row" style={{ marginBottom: 0 }}>
+            <label>{mod.type === "nav" ? "链接地址" : "说明文字"}</label>
+            <input
+              value={mod.value}
+              onChange={(e) => update(mod, { value: e.target.value })}
+            />
+          </div>
+        </div>
+        <div style={{ marginTop: 12 }}>
+          <button
+            className="btn btn-danger btn-sm"
+            onClick={() => remove(mod.id)}
+          >
+            删除
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <AdminShell title="结构模块" active="/admin/modules">
+      {node}
+
+      <div className="panel">
+        <div className="panel-head">
+          <h3>🧭 顶部导航菜单</h3>
+          <button className="btn btn-primary btn-sm" onClick={() => add("nav")}>
+            + 添加菜单
+          </button>
+        </div>
+        {navMods.map(renderCard)}
+      </div>
+
+      <div className="panel">
+        <div className="panel-head">
+          <h3>📎 右侧边栏卡片</h3>
+          <button
+            className="btn btn-primary btn-sm"
+            onClick={() => add("sidebar")}
+          >
+            + 添加卡片
+          </button>
+        </div>
+        {sideMods.map(renderCard)}
+      </div>
+
+      <div className="panel">
+        <p style={{ color: "#6b7280", fontSize: 13, lineHeight: 1.8 }}>
+          💡 这里可以增删改博客的<b>结构模块</b>：顶部导航菜单项、右侧边栏的推广卡片。
+          当前为演示版，改动暂存浏览器本地；上线接后端后，保存即实时作用到前台网站。
+        </p>
+      </div>
+    </AdminShell>
+  );
+}
