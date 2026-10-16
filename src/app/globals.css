@@ -543,10 +543,10 @@ strong {
   .article h1 { font-size: 28px; }
 }
 
-/* ===== 会员落地页 /vip（仿零度深色高端风）===== */
+/* ===== 会员落地页 /vip（浅色 + 天蓝主色，与博客统一）===== */
 .vip-page {
-  background: radial-gradient(ellipse at top, #1a1a1a 0%, #0a0a0a 70%);
-  color: #e8e2d4;
+  background: var(--bg);
+  color: var(--text-body);
   min-height: calc(100vh - 81px);
 }
 .vip-hero {
@@ -558,7 +558,7 @@ strong {
 .vip-eyebrow {
   font-size: 14px;
   letter-spacing: 4px;
-  color: #c9a86a;
+  color: var(--primary);
   margin-bottom: 28px;
 }
 .vip-eyebrow::before,
@@ -568,22 +568,22 @@ strong {
   opacity: 0.5;
 }
 .vip-hero h1 {
-  font-size: 56px;
+  font-size: 54px;
   font-weight: 800;
   line-height: 1.25;
-  color: #fff;
+  color: var(--text);
   margin-bottom: 24px;
-  letter-spacing: 2px;
+  letter-spacing: 1px;
 }
 .vip-hero h1 .gold {
-  background: linear-gradient(90deg, #e3c48d, #c9a86a);
+  background: linear-gradient(90deg, #24a5db, #1a73b5);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 .vip-hero .lead {
   font-size: 17px;
-  color: #b8b2a4;
+  color: var(--text-soft);
   max-width: 560px;
   margin: 0 auto 36px;
   line-height: 1.8;
@@ -604,20 +604,20 @@ strong {
   border: 1px solid transparent;
 }
 .vip-btn.gold {
-  background: linear-gradient(135deg, #e3c48d, #c9a86a);
-  color: #2a1f0e;
+  background: linear-gradient(135deg, #24a5db, #1a73b5);
+  color: #fff;
 }
 .vip-btn.gold:hover {
-  filter: brightness(1.08);
+  filter: brightness(1.06);
 }
 .vip-btn.ghost {
-  background: transparent;
-  border-color: #3a3a3a;
-  color: #e8e2d4;
+  background: var(--card);
+  border-color: var(--border);
+  color: var(--text);
 }
 .vip-btn.ghost:hover {
-  border-color: #c9a86a;
-  color: #c9a86a;
+  border-color: var(--primary);
+  color: var(--primary);
 }
 .vip-points {
   display: flex;
@@ -625,7 +625,7 @@ strong {
   justify-content: center;
   flex-wrap: wrap;
   font-size: 14px;
-  color: #9a948a;
+  color: var(--text-soft);
 }
 
 /* 数据统计 */
@@ -638,20 +638,21 @@ strong {
   gap: 18px;
 }
 .vip-stat {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(201, 168, 106, 0.2);
+  background: var(--card);
+  border: 1px solid var(--border);
   border-radius: 14px;
   padding: 26px 16px;
   text-align: center;
+  box-shadow: var(--shadow);
 }
 .vip-stat .n {
   font-size: 34px;
   font-weight: 800;
-  color: #e3c48d;
+  color: var(--primary);
 }
 .vip-stat .l {
   font-size: 13px;
-  color: #9a948a;
+  color: var(--text-soft);
   margin-top: 6px;
 }
 
@@ -663,7 +664,7 @@ strong {
 }
 .vip-plans h2 {
   text-align: center;
-  color: #fff;
+  color: var(--text);
   font-size: 30px;
   font-weight: 800;
   margin-bottom: 40px;
@@ -674,15 +675,16 @@ strong {
   gap: 20px;
 }
 .plan-card {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--card);
+  border: 1px solid var(--border);
   border-radius: 16px;
   padding: 32px 26px;
   position: relative;
+  box-shadow: var(--shadow);
 }
 .plan-card.hot {
-  border-color: #c9a86a;
-  background: rgba(201, 168, 106, 0.06);
+  border-color: var(--primary);
+  box-shadow: 0 10px 30px rgba(36, 165, 219, 0.18);
   transform: scale(1.04);
 }
 .plan-card .hot-badge {
@@ -690,8 +692,8 @@ strong {
   top: -12px;
   left: 50%;
   transform: translateX(-50%);
-  background: linear-gradient(135deg, #e3c48d, #c9a86a);
-  color: #2a1f0e;
+  background: linear-gradient(135deg, #24a5db, #1a73b5);
+  color: #fff;
   font-size: 12px;
   font-weight: 700;
   padding: 4px 16px;
@@ -700,18 +702,18 @@ strong {
 .plan-card .pname {
   font-size: 19px;
   font-weight: 700;
-  color: #fff;
+  color: var(--text);
   margin-bottom: 14px;
 }
 .plan-card .pprice {
   font-size: 40px;
   font-weight: 800;
-  color: #e3c48d;
+  color: var(--primary);
   margin-bottom: 6px;
 }
 .plan-card .pprice small {
   font-size: 15px;
-  color: #9a948a;
+  color: var(--text-soft);
   font-weight: 400;
 }
 .plan-card ul {
@@ -721,13 +723,13 @@ strong {
 }
 .plan-card li {
   padding: 8px 0;
-  color: #c4bfb4;
+  color: var(--text-body);
   font-size: 14px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid var(--border);
 }
 .plan-card li::before {
   content: "✓ ";
-  color: #c9a86a;
+  color: var(--primary);
   font-weight: 700;
 }
 .plan-buy {
@@ -740,22 +742,22 @@ strong {
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
-  border: 1px solid #3a3a3a;
-  background: transparent;
-  color: #e8e2d4;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text);
 }
 .plan-card.hot .plan-buy {
-  background: linear-gradient(135deg, #e3c48d, #c9a86a);
-  color: #2a1f0e;
+  background: linear-gradient(135deg, #24a5db, #1a73b5);
+  color: #fff;
   border: none;
 }
 .plan-buy:hover {
-  border-color: #c9a86a;
-  color: #c9a86a;
+  border-color: var(--primary);
+  color: var(--primary);
 }
 .plan-card.hot .plan-buy:hover {
-  filter: brightness(1.08);
-  color: #2a1f0e;
+  filter: brightness(1.06);
+  color: #fff;
 }
 
 /* 侧边栏广告位图片 */

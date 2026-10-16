@@ -34,7 +34,7 @@ export default function RootLayout({
               <a href="/">首页</a>
               <a href="/categories">分类</a>
               <a href="/categories">教程</a>
-              <a href="/vip" style={{ color: "#c9a86a", fontWeight: 600 }}>
+              <a href="/vip" style={{ color: "var(--primary)", fontWeight: 600 }}>
                 ⭐ 会员
               </a>
               <a href="/about">关于</a>
