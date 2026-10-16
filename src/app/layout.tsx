@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { listModules, getSettings } from "@/server/repo";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "阿凡达的技术博客",
@@ -12,6 +15,16 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  // 从数据库读取导航菜单和站点信息
+  const navItems = listModules("nav").filter((m) => m.enabled);
+  const settings = getSettings();
+  const siteName = settings.siteName || "阿凡达博客";
+  const siteSub = settings.siteSub || "技术折腾笔记";
+
+  // 站点名称：末两字高亮
+  const nameMain = siteName.length > 2 ? siteName.slice(0, -2) : siteName;
+  const nameHi = siteName.length > 2 ? siteName.slice(-2) : "";
+
   return (
     <html lang="zh-CN" suppressHydrationWarning>
       <head>
@@ -27,24 +40,32 @@ export default function RootLayout({
           <div className="inner">
             <span className="header-search" title="搜索">🔍</span>
             <a href="/" className="site-title">
-              阿凡达<b>博客</b>
-              <span className="sub">技术折腾笔记</span>
+              {nameMain}
+              <b>{nameHi}</b>
+              <span className="sub">{siteSub}</span>
             </a>
             <nav className="nav">
-              <a href="/">首页</a>
-              <a href="/categories">分类</a>
-              <a href="/categories">教程</a>
-              <a href="/vip" style={{ color: "var(--primary)", fontWeight: 600 }}>
-                ⭐ 会员
-              </a>
-              <a href="/about">关于</a>
+              {navItems.map((m) => (
+                <a
+                  key={m.id}
+                  href={m.value}
+                  style={
+                    m.value === "/vip"
+                      ? { color: "var(--primary)", fontWeight: 600 }
+                      : undefined
+                  }
+                >
+                  {m.value === "/vip" ? "⭐ " : ""}
+                  {m.label}
+                </a>
+              ))}
               <ThemeToggle />
             </nav>
           </div>
         </header>
         <main>{children}</main>
         <footer className="site-footer">
-          © {new Date().getFullYear()} 阿凡达的技术博客 · Powered by Next.js
+          © {new Date().getFullYear()} {siteName} · Powered by Next.js
         </footer>
       </body>
     </html>

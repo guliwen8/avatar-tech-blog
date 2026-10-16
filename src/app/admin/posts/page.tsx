@@ -10,15 +10,15 @@ export default function PostsPage() {
   const { show, node } = useToast();
 
   function refresh() {
-    setPosts(getPosts());
+    getPosts().then(setPosts);
   }
   useEffect(() => {
     refresh();
   }, []);
 
-  function onDelete(slug: string, title: string) {
+  async function onDelete(slug: string, title: string) {
     if (confirm(`确定删除文章「${title}」吗？此操作不可撤销。`)) {
-      deletePost(slug);
+      await deletePost(slug);
       refresh();
       show("文章已删除");
     }

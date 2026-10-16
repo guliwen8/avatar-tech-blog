@@ -10,18 +10,18 @@ export default function AdsPage() {
   const { show, node } = useToast();
 
   function refresh() {
-    setAds(getAds());
+    getAds().then(setAds);
   }
   useEffect(() => {
     refresh();
   }, []);
 
-  function update(ad: AdSlot, patch: Partial<AdSlot>) {
-    saveAd({ ...ad, ...patch });
+  async function update(ad: AdSlot, patch: Partial<AdSlot>) {
+    await saveAd({ ...ad, ...patch });
     refresh();
   }
-  function add() {
-    saveAd({
+  async function add() {
+    await saveAd({
       id: "ad-" + Date.now(),
       title: "新广告",
       image: "",
@@ -32,9 +32,9 @@ export default function AdsPage() {
     refresh();
     show("已添加广告位");
   }
-  function remove(id: string) {
+  async function remove(id: string) {
     if (confirm("确定删除这个广告位吗？")) {
-      deleteAd(id);
+      await deleteAd(id);
       refresh();
       show("广告位已删除");
     }

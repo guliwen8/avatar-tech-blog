@@ -8,7 +8,7 @@ export default function CategoriesPage() {
   const [posts, setPosts] = useState<AdminPost[]>([]);
 
   useEffect(() => {
-    setPosts(getPosts());
+    getPosts().then(setPosts);
   }, []);
 
   const cats = useMemo(() => {

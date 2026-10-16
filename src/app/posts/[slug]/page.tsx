@@ -1,11 +1,9 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { getAllSlugs, getPostBySlug } from "@/lib/posts";
+import { getPostBySlug } from "@/lib/posts";
 
-// 告诉 Next.js 要为哪些文章生成静态页面
-export function generateStaticParams() {
-  return getAllSlugs().map((slug) => ({ slug }));
-}
+// 文章来自数据库，动态渲染
+export const dynamic = "force-dynamic";
 
 // 每篇文章的网页标题
 export async function generateMetadata({

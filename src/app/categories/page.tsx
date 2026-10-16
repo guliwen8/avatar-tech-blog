@@ -1,5 +1,7 @@
 import { getAllCategories, getAllPostsMeta } from "@/lib/posts";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "文章分类 · 阿凡达的技术博客",
 };

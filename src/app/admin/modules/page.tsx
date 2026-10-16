@@ -15,21 +15,21 @@ export default function ModulesPage() {
   const { show, node } = useToast();
 
   function refresh() {
-    setMods(getModules());
+    getModules().then(setMods);
   }
   useEffect(() => {
     refresh();
   }, []);
 
-  function update(mod: SiteModule, patch: Partial<SiteModule>) {
-    saveModule({ ...mod, ...patch });
+  async function update(mod: SiteModule, patch: Partial<SiteModule>) {
+    await saveModule({ ...mod, ...patch });
     refresh();
     show("模块已更新");
   }
 
-  function add(type: "nav" | "sidebar") {
+  async function add(type: "nav" | "sidebar") {
     const id = type + "-" + Date.now();
-    saveModule({
+    await saveModule({
       id,
       type,
       label: type === "nav" ? "新菜单" : "新卡片标题",
@@ -40,9 +40,9 @@ export default function ModulesPage() {
     show("已添加模块");
   }
 
-  function remove(id: string) {
+  async function remove(id: string) {
     if (confirm("确定删除这个模块吗？")) {
-      deleteModule(id);
+      await deleteModule(id);
       refresh();
       show("模块已删除");
     }

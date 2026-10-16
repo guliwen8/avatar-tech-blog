@@ -10,18 +10,18 @@ export default function PlansPage() {
   const { show, node } = useToast();
 
   function refresh() {
-    setPlans(getPlans());
+    getPlans().then(setPlans);
   }
   useEffect(() => {
     refresh();
   }, []);
 
-  function update(plan: MemberPlan, patch: Partial<MemberPlan>) {
-    savePlan({ ...plan, ...patch });
+  async function update(plan: MemberPlan, patch: Partial<MemberPlan>) {
+    await savePlan({ ...plan, ...patch });
     refresh();
   }
-  function add() {
-    savePlan({
+  async function add() {
+    await savePlan({
       id: "plan-" + Date.now(),
       name: "新套餐",
       price: 99,
@@ -33,9 +33,9 @@ export default function PlansPage() {
     refresh();
     show("已添加套餐");
   }
-  function remove(id: string) {
+  async function remove(id: string) {
     if (confirm("确定删除这个套餐吗？")) {
-      deletePlan(id);
+      await deletePlan(id);
       refresh();
       show("套餐已删除");
     }

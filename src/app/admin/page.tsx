@@ -10,9 +10,9 @@ export default function DashboardPage() {
   const [adCount, setAdCount] = useState(0);
 
   useEffect(() => {
-    setPosts(getPosts());
-    setPlanCount(getPlans().length);
-    setAdCount(getAds().length);
+    getPosts().then(setPosts);
+    getPlans().then((p) => setPlanCount(p.length));
+    getAds().then((a) => setAdCount(a.length));
   }, []);
 
   const published = posts.filter((p) => p.published).length;

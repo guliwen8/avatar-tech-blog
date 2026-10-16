@@ -778,3 +778,112 @@ strong {
   .plan-grid { grid-template-columns: 1fr; }
   .plan-card.hot { transform: none; }
 }
+
+/* ===== 支付弹窗 ===== */
+.pay-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+.pay-box {
+  background: var(--card);
+  color: var(--text);
+  border-radius: 16px;
+  padding: 32px;
+  width: 380px;
+  max-width: 100%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+.pay-box h3 {
+  font-size: 20px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+.pay-info {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 18px;
+}
+.pay-info > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 7px 0;
+  font-size: 14px;
+}
+.pay-info span {
+  color: var(--text-soft);
+}
+.pay-info .price {
+  color: var(--primary);
+  font-size: 22px;
+}
+.pay-info small {
+  color: var(--text-soft);
+  font-size: 12px;
+}
+.pay-qr {
+  text-align: center;
+  margin-bottom: 18px;
+}
+.qr-ph {
+  width: 150px;
+  height: 150px;
+  margin: 0 auto 12px;
+  border: 2px dashed var(--border);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-soft);
+  font-size: 14px;
+}
+.pay-qr p {
+  font-size: 12px;
+  color: var(--text-soft);
+  line-height: 1.6;
+}
+.pay-btn {
+  width: 100%;
+  padding: 13px;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.pay-btn:hover {
+  filter: brightness(1.06);
+}
+.pay-cancel {
+  width: 100%;
+  margin-top: 10px;
+  padding: 11px;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-soft);
+  border-radius: 10px;
+  font-size: 14px;
+  cursor: pointer;
+}
+.pay-done {
+  text-align: center;
+}
+.pay-done .done-ico {
+  font-size: 48px;
+  margin-bottom: 10px;
+}
+.pay-done p {
+  color: var(--text-soft);
+  font-size: 14px;
+  line-height: 1.7;
+  margin: 12px 0 20px;
+}

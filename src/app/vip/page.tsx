@@ -11,52 +11,49 @@ interface Plan {
   highlight: boolean;
 }
 
-// 默认套餐（与后台一致）；若后台改过则读取后台数据
-const DEFAULT_PLANS: Plan[] = [
-  {
-    id: "plan-month",
-    name: "月度会员",
-    price: 29,
-    period: "/月",
-    features: ["全部付费文章", "实战视频教程", "会员专属下载"],
-    highlight: false,
-  },
-  {
-    id: "plan-year",
-    name: "年度会员",
-    price: 199,
-    period: "/年",
-    features: ["月度全部权益", "一对一人工咨询", "优先答疑", "全年持续更新"],
-    highlight: true,
-  },
-  {
-    id: "plan-forever",
-    name: "永久会员",
-    price: 599,
-    period: "永久",
-    features: ["年度全部权益", "终身免费更新", "远程协助服务", "专属社群"],
-    highlight: false,
-  },
-];
-
 export default function VipPage() {
-  const [plans, setPlans] = useState<Plan[]>(DEFAULT_PLANS);
+  const [plans, setPlans] = useState<Plan[]>([]);
+  const [order, setOrder] = useState<{
+    orderId: string;
+    planName: string;
+    amount: number;
+  } | null>(null);
+  const [paid, setPaid] = useState(false);
 
   useEffect(() => {
-    // 若后台在本机改过套餐，优先用后台数据
-    try {
-      const raw = localStorage.getItem("avatar_admin_plans");
-      if (raw) {
-        const data = JSON.parse(raw) as (Plan & { enabled: boolean })[];
-        setPlans(data.filter((p) => p.enabled));
-      }
-    } catch {}
+    // 从后端读取启用的套餐（公开接口）
+    fetch("/api/plans/public")
+      .then((r) => r.json())
+      .then(setPlans)
+      .catch(() => setPlans([]));
   }, []);
 
-  function buy(name: string) {
-    alert(
-      `你选择了「${name}」。\n\n支付功能将在部署到群晖 NAS、接入支付接口（微信/支付宝）后开通。`
-    );
+  async function buy(plan: Plan) {
+    const res = await fetch("/api/orders", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ planId: plan.id, method: "mock" }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      setOrder({
+        orderId: data.orderId,
+        planName: data.planName,
+        amount: data.amount,
+      });
+      setPaid(false);
+    }
+  }
+
+  async function mockPay() {
+    if (!order) return;
+    const res = await fetch("/api/orders", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "mock-pay", orderId: order.orderId }),
+    });
+    const data = await res.json();
+    if (data.status === "paid") setPaid(true);
   }
 
   return (
@@ -72,9 +69,9 @@ export default function VipPage() {
           汇聚精选深度文章、实战教程视频与一对一人工咨询，帮你构建长期成长壁垒。
         </p>
         <div className="vip-cta">
-          <button className="vip-btn gold" onClick={() => buy("立即咨询")}>
-            💬 立即咨询
-          </button>
+          <a className="vip-btn gold" href="#plans">
+            💎 查看会员方案
+          </a>
           <a className="vip-btn ghost" href="/">
             📖 浏览精选内容
           </a>
@@ -106,7 +103,7 @@ export default function VipPage() {
         </div>
       </section>
 
-      <section className="vip-plans">
+      <section className="vip-plans" id="plans">
         <h2>选择你的会员方案</h2>
         <div className="plan-grid">
           {plans.map((p) => (
@@ -122,13 +119,67 @@ export default function VipPage() {
                   <li key={i}>{f}</li>
                 ))}
               </ul>
-              <button className="plan-buy" onClick={() => buy(p.name)}>
+              <button className="plan-buy" onClick={() => buy(p)}>
                 立即开通
               </button>
             </div>
           ))}
         </div>
       </section>
+
+      {/* 下单 / 支付弹窗 */}
+      {order && (
+        <div className="pay-mask" onClick={() => setOrder(null)}>
+          <div className="pay-box" onClick={(e) => e.stopPropagation()}>
+            {!paid ? (
+              <>
+                <h3>订单确认</h3>
+                <div className="pay-info">
+                  <div>
+                    <span>套餐</span>
+                    <b>{order.planName}</b>
+                  </div>
+                  <div>
+                    <span>金额</span>
+                    <b className="price">¥{order.amount}</b>
+                  </div>
+                  <div>
+                    <span>订单号</span>
+                    <small>{order.orderId}</small>
+                  </div>
+                </div>
+                <div className="pay-qr">
+                  <div className="qr-ph">📱 支付二维码</div>
+                  <p>
+                    真实收款（微信 / 支付宝）将在接入商户号后在此显示二维码。
+                    <br />
+                    现在用下方按钮模拟完成支付。
+                  </p>
+                </div>
+                <button className="pay-btn" onClick={mockPay}>
+                  ✅ 模拟支付成功
+                </button>
+                <button className="pay-cancel" onClick={() => setOrder(null)}>
+                  取消
+                </button>
+              </>
+            ) : (
+              <div className="pay-done">
+                <div className="done-ico">🎉</div>
+                <h3>支付成功！</h3>
+                <p>
+                  感谢开通「{order.planName}」会员。
+                  <br />
+                  订单已记录，可在后台「订单记录」查看。
+                </p>
+                <button className="pay-btn" onClick={() => setOrder(null)}>
+                  完成
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

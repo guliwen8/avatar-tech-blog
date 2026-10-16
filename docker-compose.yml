@@ -1,11 +1,13 @@
-# 群晖 NAS 上用 Container Manager 项目（Project）功能，或命令行 docker compose up -d 启动
+# 群晖 NAS 上用 Container Manager 的「项目」功能，或命令行 docker compose up -d 启动
 services:
   blog:
     build: .
     container_name: avatar-blog
     ports:
-      - "3000:3000" # 左边是 NAS 对外端口，可按需改成别的，比如 "8080:3000"
+      - "3000:3000" # 左边是 NAS 对外端口，可改成别的，比如 "8080:3000"
     restart: unless-stopped
-    # 把文章目录挂载出来，这样在 NAS 上改 Markdown 文件无需重新构建镜像
+    environment:
+      - DB_PATH=/app/data/blog.db
+    # 把数据库目录挂载到 NAS，保证容器重建后数据不丢
     volumes:
-      - ./content:/app/content
+      - ./data:/app/data

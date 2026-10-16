@@ -47,7 +47,20 @@ function Card({ post }: { post: PostMeta }) {
   );
 }
 
-export function PostList({ posts }: { posts: PostMeta[] }) {
+interface AdItem {
+  id: string;
+  title: string;
+  image: string;
+  link: string;
+}
+
+export function PostList({
+  posts,
+  ads = [],
+}: {
+  posts: PostMeta[];
+  ads?: AdItem[];
+}) {
   const [query, setQuery] = useState("");
 
   const filtered = useMemo(() => {
@@ -89,17 +102,19 @@ export function PostList({ posts }: { posts: PostMeta[] }) {
           />
         </div>
 
-        <div className="side-ad vip">
-          <h3>⭐ 加入阿凡达 VIP 会员</h3>
-          <p>解锁全部教程资源，一对一答疑</p>
-          <span className="btn">立即了解</span>
-        </div>
-
-        <div className="side-ad tool">
-          <h3>🚀 推荐工具</h3>
-          <p>高速下载 · 效率神器</p>
-          <span className="btn">立即获取</span>
-        </div>
+        {/* 广告位：来自后台数据库，可在后台增删改 */}
+        {ads.map((ad) =>
+          ad.image ? (
+            <a key={ad.id} href={ad.link} className="side-ad-img">
+              <img src={ad.image} alt={ad.title} />
+            </a>
+          ) : (
+            <a key={ad.id} href={ad.link} className="side-ad vip">
+              <h3>{ad.title}</h3>
+              <span className="btn">了解详情</span>
+            </a>
+          )
+        )}
 
         <div className="side-box">
           <h4>🕐 最近文章</h4>

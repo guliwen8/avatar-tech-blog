@@ -37,8 +37,9 @@ function EditForm() {
 
   useEffect(() => {
     if (editSlug) {
-      const p = getPost(editSlug);
-      if (p) setForm(p);
+      getPost(editSlug).then((p) => {
+        if (p) setForm(p);
+      });
     }
   }, [editSlug]);
 
@@ -46,7 +47,7 @@ function EditForm() {
     setForm((f) => ({ ...f, [key]: val }));
   }
 
-  function onSave() {
+  async function onSave() {
     if (!form.title.trim()) {
       alert("请填写标题");
       return;
@@ -55,7 +56,7 @@ function EditForm() {
       ...form,
       slug: form.slug || toSlug(form.title),
     };
-    savePost(toSave);
+    await savePost(toSave);
     show(isEdit ? "文章已更新" : "文章已创建");
     setTimeout(() => {
       window.location.href = "/admin/posts";

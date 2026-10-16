@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { isLoggedIn, login, logout, DEMO_PASSWORD } from "./store";
+import { checkAuth, login, logout } from "./store";
 
 const MENU = [
   { href: "/admin", ico: "📊", label: "仪表盘" },
   { href: "/admin/posts", ico: "📝", label: "文章管理" },
   { href: "/admin/categories", ico: "📂", label: "分类管理" },
   { href: "/admin/plans", ico: "💎", label: "会员套餐" },
+  { href: "/admin/orders", ico: "🧾", label: "订单记录" },
   { href: "/admin/ads", ico: "📢", label: "广告位" },
   { href: "/admin/modules", ico: "🧩", label: "结构模块" },
   { href: "/admin/settings", ico: "⚙️", label: "站点设置" },
@@ -24,20 +25,21 @@ export function AdminShell({
   children: React.ReactNode;
 }) {
   const [authed, setAuthed] = useState<boolean | null>(null);
+  const [user, setUser] = useState("admin");
   const [pwd, setPwd] = useState("");
   const [err, setErr] = useState("");
 
   useEffect(() => {
-    setAuthed(isLoggedIn());
+    checkAuth().then(setAuthed);
   }, []);
 
-  function doLogin(e: React.FormEvent) {
+  async function doLogin(e: React.FormEvent) {
     e.preventDefault();
-    if (login(pwd)) {
+    if (await login(user, pwd)) {
       setAuthed(true);
       setErr("");
     } else {
-      setErr("密码错误，请重试");
+      setErr("用户名或密码错误，请重试");
     }
   }
 
@@ -53,21 +55,27 @@ export function AdminShell({
         <div className="login-wrap">
           <form className="login-card" onSubmit={doLogin}>
             <h1>阿凡达博客 · 管理后台</h1>
-            <div className="sub">请输入管理密码登录</div>
+            <div className="sub">请登录以管理你的网站</div>
+            <label>用户名</label>
+            <input
+              value={user}
+              onChange={(e) => setUser(e.target.value)}
+              placeholder="用户名"
+              autoFocus
+            />
             <label>密码</label>
             <input
               type="password"
               value={pwd}
               onChange={(e) => setPwd(e.target.value)}
               placeholder="输入密码"
-              autoFocus
             />
             <button type="submit">登录</button>
             {err && <div className="login-err">{err}</div>}
             <div className="login-hint">
-              💡 演示版密码：<b>{DEMO_PASSWORD}</b>
+              💡 默认账号 <b>admin</b> / 密码 <b>avatar2026</b>
               <br />
-              （正式上线接后端后，会换成安全的账号密码登录）
+              登录后请在「站点设置」里修改成你自己的密码。
             </div>
           </form>
         </div>
@@ -97,8 +105,8 @@ export function AdminShell({
           </nav>
           <div
             className="logout"
-            onClick={() => {
-              logout();
+            onClick={async () => {
+              await logout();
               setAuthed(false);
             }}
           >
