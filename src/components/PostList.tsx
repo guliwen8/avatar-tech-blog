@@ -3,11 +3,12 @@
 import { useMemo, useState } from "react";
 import type { PostMeta } from "@/lib/posts";
 
-// 单张文章卡片（带封面图）
+// 单张文章卡片（带封面图 + 分类角标）
 function Card({ post }: { post: PostMeta }) {
   return (
     <a href={`/posts/${post.slug}`} className="post-card">
       <div className="post-cover">
+        <span className="cover-cat">{post.category}</span>
         {post.cover ? (
           <img src={post.cover} alt={post.title} />
         ) : (
@@ -79,6 +80,18 @@ export function PostList({ posts }: { posts: PostMeta[] }) {
           <h3>🚀 推荐工具</h3>
           <p>高速下载 · 效率神器</p>
           <span className="btn">立即获取</span>
+        </div>
+
+        <div className="side-block">
+          <h4>🕐 最近文章</h4>
+          <div className="recent-list">
+            {posts.slice(0, 5).map((p) => (
+              <a key={p.slug} href={`/posts/${p.slug}`} className="recent-item">
+                <span className="recent-title">{p.title}</span>
+                <span className="recent-date">{p.date}</span>
+              </a>
+            ))}
+          </div>
         </div>
 
         <div className="side-block">
