@@ -7,6 +7,8 @@ const MENU = [
   { href: "/admin", ico: "📊", label: "仪表盘" },
   { href: "/admin/posts", ico: "📝", label: "文章管理" },
   { href: "/admin/categories", ico: "📂", label: "分类管理" },
+  { href: "/admin/plans", ico: "💎", label: "会员套餐" },
+  { href: "/admin/ads", ico: "📢", label: "广告位" },
   { href: "/admin/modules", ico: "🧩", label: "结构模块" },
   { href: "/admin/settings", ico: "⚙️", label: "站点设置" },
 ];

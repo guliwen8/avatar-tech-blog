@@ -2,19 +2,20 @@
 
 import { useEffect, useState } from "react";
 import { AdminShell } from "./AdminShell";
-import { getPosts, getModules, type AdminPost } from "./store";
+import { getPosts, getPlans, getAds, type AdminPost } from "./store";
 
 export default function DashboardPage() {
   const [posts, setPosts] = useState<AdminPost[]>([]);
-  const [modCount, setModCount] = useState(0);
+  const [planCount, setPlanCount] = useState(0);
+  const [adCount, setAdCount] = useState(0);
 
   useEffect(() => {
     setPosts(getPosts());
-    setModCount(getModules().length);
+    setPlanCount(getPlans().length);
+    setAdCount(getAds().length);
   }, []);
 
   const published = posts.filter((p) => p.published).length;
-  const categories = new Set(posts.map((p) => p.category)).size;
 
   return (
     <AdminShell title="仪表盘" active="/admin">
@@ -28,12 +29,12 @@ export default function DashboardPage() {
           <div className="l">已发布</div>
         </div>
         <div className="stat-card">
-          <div className="n">{categories}</div>
-          <div className="l">分类数</div>
+          <div className="n">{planCount}</div>
+          <div className="l">会员套餐</div>
         </div>
         <div className="stat-card">
-          <div className="n">{modCount}</div>
-          <div className="l">结构模块</div>
+          <div className="n">{adCount}</div>
+          <div className="l">广告位</div>
         </div>
       </div>
 
