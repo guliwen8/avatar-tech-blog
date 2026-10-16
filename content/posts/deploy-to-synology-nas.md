@@ -4,7 +4,7 @@ date: 2026-10-15
 description: 一步步把这个 Next.js 博客用 Docker 跑在你自己的群晖 NAS 上，大陆访问更稳定。
 category: 教程
 tags: [群晖, Docker, 部署]
-cover: https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=800&q=80
+cover: https://images.unsplash.com/photo-1591405351990-4726e331f141?w=800&q=80
 ---
 
 ## 为什么用 NAS 部署？

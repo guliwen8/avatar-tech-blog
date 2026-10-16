@@ -4,7 +4,7 @@ date: 2026-10-16
 description: 欢迎来到我的技术博客！这是第一篇文章，介绍一下这个博客以及怎么写新文章。
 category: 随笔
 tags: [开始, 博客]
-cover: https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=800&q=80
+cover: https://images.unsplash.com/photo-1534972195531-d756b9bfa9f2?w=800&q=80
 ---
 
 ## 欢迎 👋

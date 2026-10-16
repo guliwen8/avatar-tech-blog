@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import type { PostMeta } from "@/lib/posts";
 
-// 单张文章卡片（带封面图 + 分类角标）
+// 单张文章卡片（带封面图 + 分类角标 + 作者头像）
 function Card({ post }: { post: PostMeta }) {
   return (
     <a href={`/posts/${post.slug}`} className="post-card">
@@ -14,6 +14,8 @@ function Card({ post }: { post: PostMeta }) {
         ) : (
           <div className="cover-text">{post.title}</div>
         )}
+        {/* 封面左下角作者头像（像零度那样）*/}
+        <span className="cover-avatar" aria-hidden>阿</span>
       </div>
       <div className="body">
         <h2>{post.title}</h2>
