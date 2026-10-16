@@ -33,21 +33,22 @@ export default async function PostPage({
   if (!post) notFound();
 
   return (
-    <article className="container article">
-      <a href="/" className="back">
-        ← 返回首页
-      </a>
-      <h1>{post.title}</h1>
-      <div className="meta">
-        <span className="badge">{post.category}</span>
-        <span>{post.date}</span>
-        <span>·</span>
-        <span>{post.readingTime}</span>
-      </div>
-      <div
-        className="prose"
-        dangerouslySetInnerHTML={{ __html: post.contentHtml }}
-      />
-    </article>
+    <div className="article-wrap">
+      <article className="article">
+        <a href="/" className="back">
+          ← 返回首页
+        </a>
+        <h1>{post.title}</h1>
+        <div className="meta">
+          <span className="cat">{post.category}</span>
+          <span>📅 {post.date}</span>
+          <span>· {post.readingTime}</span>
+        </div>
+        <div
+          className="prose"
+          dangerouslySetInnerHTML={{ __html: post.contentHtml }}
+        />
+      </article>
+    </div>
   );
 }

@@ -33,6 +33,7 @@ export default function RootLayout({
             <nav className="nav">
               <a href="/">首页</a>
               <a href="/categories">分类</a>
+              <a href="/categories">教程</a>
               <a href="/about">关于</a>
               <ThemeToggle />
             </nav>
@@ -40,9 +41,7 @@ export default function RootLayout({
         </header>
         <main>{children}</main>
         <footer className="site-footer">
-          <div className="container">
-            © {new Date().getFullYear()} 阿凡达的技术博客 · Powered by Next.js
-          </div>
+          © {new Date().getFullYear()} 阿凡达的技术博客 · Powered by Next.js
         </footer>
       </body>
     </html>

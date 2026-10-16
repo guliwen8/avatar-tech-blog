@@ -1,6 +1,5 @@
 import { getAllCategories, getAllPostsMeta } from "@/lib/posts";
 
-// 分类页：按分类分组展示所有文章
 export const metadata = {
   title: "文章分类 · 阿凡达的技术博客",
 };
@@ -10,43 +9,42 @@ export default function CategoriesPage() {
   const posts = getAllPostsMeta();
 
   return (
-    <div className="container">
-      <section className="hero">
-        <h1>📂 文章分类</h1>
-        <p>共 {categories.length} 个分类</p>
-        <div className="cat-row">
-          {categories.map((c) => (
-            <span key={c.name} className="cat-chip">
-              {c.name} ({c.count})
-            </span>
-          ))}
+    <div className="article-wrap">
+      <div className="article">
+        <div className="page-head">
+          <h1>📂 文章分类</h1>
+          <p>共 {categories.length} 个分类</p>
         </div>
-      </section>
 
-      {categories.map((cat) => (
-        <section key={cat.name} style={{ marginTop: 32 }}>
-          <h2 style={{ fontSize: 20, marginBottom: 12 }}>{cat.name}</h2>
-          <div className="post-list" style={{ paddingTop: 0 }}>
+        {categories.map((cat) => (
+          <section key={cat.name} style={{ marginTop: 28 }}>
+            <h2
+              style={{
+                fontSize: 20,
+                fontWeight: 600,
+                marginBottom: 12,
+                color: "var(--text)",
+              }}
+            >
+              {cat.name}（{cat.count}）
+            </h2>
             {posts
               .filter((p) => p.category === cat.name)
               .map((post) => (
                 <a
                   key={post.slug}
                   href={`/posts/${post.slug}`}
-                  className="post-card"
+                  className="recent-item"
                 >
-                  <div className="meta">
-                    <span>{post.date}</span>
-                    <span>·</span>
-                    <span>{post.readingTime}</span>
-                  </div>
-                  <h2 style={{ fontSize: 18 }}>{post.title}</h2>
-                  <p>{post.description}</p>
+                  <span className="t" style={{ fontSize: 15 }}>
+                    {post.title}
+                  </span>
+                  <span className="d">📅 {post.date}</span>
                 </a>
               ))}
-          </div>
-        </section>
-      ))}
+          </section>
+        ))}
+      </div>
     </div>
   );
 }

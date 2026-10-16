@@ -3,9 +3,9 @@
 import { useMemo, useState } from "react";
 import type { PostMeta } from "@/lib/posts";
 
-// 自动封面生成：根据分类名选一套鲜艳渐变色，让没配图的文章也有炫酷大字封面
+// 无图文章的自动渐变封面（按分类取色）
 const GRADIENTS = [
-  "linear-gradient(135deg, #2f8fd8 0%, #7b4bff 100%)",
+  "linear-gradient(135deg, #24a5db 0%, #4f6bff 100%)",
   "linear-gradient(135deg, #f6416c 0%, #ff8c42 100%)",
   "linear-gradient(135deg, #11998e 0%, #38ef7d 100%)",
   "linear-gradient(135deg, #654ea3 0%, #eaafc8 100%)",
@@ -18,35 +18,35 @@ function gradientFor(key: string): string {
   return GRADIENTS[h % GRADIENTS.length];
 }
 
-// 单张文章卡片：封面始终叠加大标题文字（像零度那种大字封面）
+// 单张卡片 —— 还原零度 gridzone 结构：缩略图 + 标题 + 日期meta
 function Card({ post }: { post: PostMeta }) {
-  const bg = gradientFor(post.category || post.title);
   return (
-    <a href={`/posts/${post.slug}`} className="post-card">
-      <div className="post-cover" style={{ background: bg }}>
-        <span className="cover-cat">{post.category}</span>
-        {post.cover && (
-          <img src={post.cover} alt={post.title} className="cover-img" />
-        )}
-        {/* 封面上叠加的大标题文字 —— 这是视觉冲击的关键 */}
-        <div className={`cover-title ${post.cover ? "has-img" : ""}`}>
-          {post.title}
+    <div className="post-card">
+      <div className="masonry-inner">
+        <a
+          href={`/posts/${post.slug}`}
+          className="entry-thumbnail"
+          style={post.cover ? undefined : { background: gradientFor(post.category || post.title) }}
+        >
+          {post.cover ? (
+            <img src={post.cover} alt={post.title} />
+          ) : (
+            <span className="thumb-text">{post.title}</span>
+          )}
+        </a>
+        <h2 className="entry-title">
+          <a href={`/posts/${post.slug}`}>{post.title}</a>
+        </h2>
+        <div className="entry-meta">
+          <span className="cat">{post.category}</span>
+          <span className="dot">·</span>
+          <span>📅 {post.date}</span>
         </div>
-        {/* 封面左下角作者头像 */}
-        <span className="cover-avatar" aria-hidden>阿</span>
       </div>
-      <div className="body">
-        <h2>{post.title}</h2>
-        <div className="foot">
-          <span className="cal">📅</span>
-          <span>{post.date}</span>
-        </div>
-      </div>
-    </a>
+    </div>
   );
 }
 
-// 网格文章列表 + 搜索（搜索框在右侧栏，通过事件联动）
 export function PostList({ posts }: { posts: PostMeta[] }) {
   const [query, setQuery] = useState("");
 
@@ -62,7 +62,6 @@ export function PostList({ posts }: { posts: PostMeta[] }) {
     );
   }, [query, posts]);
 
-  // 分类统计（给侧边栏用）
   const categories = useMemo(() => {
     const map = new Map<string, number>();
     for (const p of posts) map.set(p.category, (map.get(p.category) ?? 0) + 1);
@@ -71,7 +70,7 @@ export function PostList({ posts }: { posts: PostMeta[] }) {
 
   return (
     <div className="layout">
-      {/* 左侧：文章网格 */}
+      {/* 左侧文章网格 */}
       <div className="post-grid">
         {filtered.length === 0 ? (
           <p className="empty">没有找到匹配的文章 🤔</p>
@@ -80,9 +79,9 @@ export function PostList({ posts }: { posts: PostMeta[] }) {
         )}
       </div>
 
-      {/* 右侧：侧边栏 */}
+      {/* 右侧栏 */}
       <aside className="sidebar">
-        <div className="side-search">
+        <div className="side-box">
           <input
             placeholder="🔍 搜索文章…"
             value={query}
@@ -90,31 +89,29 @@ export function PostList({ posts }: { posts: PostMeta[] }) {
           />
         </div>
 
-        <div className="side-card vip">
-          <h3>⭐ 加入 VIP 会员</h3>
+        <div className="side-ad vip">
+          <h3>⭐ 加入阿凡达 VIP 会员</h3>
           <p>解锁全部教程资源，一对一答疑</p>
           <span className="btn">立即了解</span>
         </div>
 
-        <div className="side-card tool">
+        <div className="side-ad tool">
           <h3>🚀 推荐工具</h3>
           <p>高速下载 · 效率神器</p>
           <span className="btn">立即获取</span>
         </div>
 
-        <div className="side-block">
+        <div className="side-box">
           <h4>🕐 最近文章</h4>
-          <div className="recent-list">
-            {posts.slice(0, 5).map((p) => (
-              <a key={p.slug} href={`/posts/${p.slug}`} className="recent-item">
-                <span className="recent-title">{p.title}</span>
-                <span className="recent-date">{p.date}</span>
-              </a>
-            ))}
-          </div>
+          {posts.slice(0, 5).map((p) => (
+            <a key={p.slug} href={`/posts/${p.slug}`} className="recent-item">
+              <span className="t">{p.title}</span>
+              <span className="d">{p.date}</span>
+            </a>
+          ))}
         </div>
 
-        <div className="side-block">
+        <div className="side-box">
           <h4>📂 文章分类</h4>
           <div className="cat-list">
             {categories.map(([name, count]) => (
