@@ -3,18 +3,36 @@
 import { useMemo, useState } from "react";
 import type { PostMeta } from "@/lib/posts";
 
-// 单张文章卡片（带封面图 + 分类角标 + 作者头像）
+// 自动封面生成：根据分类名选一套鲜艳渐变色，让没配图的文章也有炫酷大字封面
+const GRADIENTS = [
+  "linear-gradient(135deg, #2f8fd8 0%, #7b4bff 100%)",
+  "linear-gradient(135deg, #f6416c 0%, #ff8c42 100%)",
+  "linear-gradient(135deg, #11998e 0%, #38ef7d 100%)",
+  "linear-gradient(135deg, #654ea3 0%, #eaafc8 100%)",
+  "linear-gradient(135deg, #ff512f 0%, #dd2476 100%)",
+  "linear-gradient(135deg, #1a2980 0%, #26d0ce 100%)",
+];
+function gradientFor(key: string): string {
+  let h = 0;
+  for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) >>> 0;
+  return GRADIENTS[h % GRADIENTS.length];
+}
+
+// 单张文章卡片：封面始终叠加大标题文字（像零度那种大字封面）
 function Card({ post }: { post: PostMeta }) {
+  const bg = gradientFor(post.category || post.title);
   return (
     <a href={`/posts/${post.slug}`} className="post-card">
-      <div className="post-cover">
+      <div className="post-cover" style={{ background: bg }}>
         <span className="cover-cat">{post.category}</span>
-        {post.cover ? (
-          <img src={post.cover} alt={post.title} />
-        ) : (
-          <div className="cover-text">{post.title}</div>
+        {post.cover && (
+          <img src={post.cover} alt={post.title} className="cover-img" />
         )}
-        {/* 封面左下角作者头像（像零度那样）*/}
+        {/* 封面上叠加的大标题文字 —— 这是视觉冲击的关键 */}
+        <div className={`cover-title ${post.cover ? "has-img" : ""}`}>
+          {post.title}
+        </div>
+        {/* 封面左下角作者头像 */}
         <span className="cover-avatar" aria-hidden>阿</span>
       </div>
       <div className="body">
