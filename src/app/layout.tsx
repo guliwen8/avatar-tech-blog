@@ -25,8 +25,10 @@ export default function RootLayout({
       <body>
         <header className="site-header">
           <div className="inner">
+            <span className="header-search" title="搜索">🔍</span>
             <a href="/" className="site-title">
-              阿凡达的<span>技术博客</span>
+              阿凡达<b>博客</b>
+              <span className="sub">技术折腾笔记</span>
             </a>
             <nav className="nav">
               <a href="/">首页</a>

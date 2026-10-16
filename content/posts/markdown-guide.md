@@ -4,6 +4,7 @@ date: 2026-10-14
 description: 写博客文章常用的 Markdown 语法大全，收藏这一篇就够了。
 category: 教程
 tags: [Markdown, 写作]
+cover: https://images.unsplash.com/photo-1455390582262-044cdead277a?w=800&q=80
 ---
 
 ## 标题

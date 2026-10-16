@@ -3,7 +3,29 @@
 import { useMemo, useState } from "react";
 import type { PostMeta } from "@/lib/posts";
 
-// 带实时搜索的文章列表（首页用）
+// 单张文章卡片（带封面图）
+function Card({ post }: { post: PostMeta }) {
+  return (
+    <a href={`/posts/${post.slug}`} className="post-card">
+      <div className="post-cover">
+        {post.cover ? (
+          <img src={post.cover} alt={post.title} />
+        ) : (
+          <div className="cover-text">{post.title}</div>
+        )}
+      </div>
+      <div className="body">
+        <h2>{post.title}</h2>
+        <div className="foot">
+          <span className="cal">📅</span>
+          <span>{post.date}</span>
+        </div>
+      </div>
+    </a>
+  );
+}
+
+// 网格文章列表 + 搜索（搜索框在右侧栏，通过事件联动）
 export function PostList({ posts }: { posts: PostMeta[] }) {
   const [query, setQuery] = useState("");
 
@@ -19,33 +41,58 @@ export function PostList({ posts }: { posts: PostMeta[] }) {
     );
   }, [query, posts]);
 
-  return (
-    <>
-      <input
-        className="search-box"
-        placeholder="🔍 搜索文章标题、分类、标签…"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-      />
+  // 分类统计（给侧边栏用）
+  const categories = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const p of posts) map.set(p.category, (map.get(p.category) ?? 0) + 1);
+    return Array.from(map.entries());
+  }, [posts]);
 
-      {filtered.length === 0 ? (
-        <p className="empty">没有找到匹配的文章 🤔</p>
-      ) : (
-        <div className="post-list">
-          {filtered.map((post) => (
-            <a key={post.slug} href={`/posts/${post.slug}`} className="post-card">
-              <div className="meta">
-                <span className="badge">{post.category}</span>
-                <span>{post.date}</span>
-                <span>·</span>
-                <span>{post.readingTime}</span>
-              </div>
-              <h2>{post.title}</h2>
-              <p>{post.description}</p>
-            </a>
-          ))}
+  return (
+    <div className="layout">
+      {/* 左侧：文章网格 */}
+      <div className="post-grid">
+        {filtered.length === 0 ? (
+          <p className="empty">没有找到匹配的文章 🤔</p>
+        ) : (
+          filtered.map((post) => <Card key={post.slug} post={post} />)
+        )}
+      </div>
+
+      {/* 右侧：侧边栏 */}
+      <aside className="sidebar">
+        <div className="side-search">
+          <input
+            placeholder="🔍 搜索文章…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
         </div>
-      )}
-    </>
+
+        <div className="side-card vip">
+          <h3>⭐ 加入 VIP 会员</h3>
+          <p>解锁全部教程资源，一对一答疑</p>
+          <span className="btn">立即了解</span>
+        </div>
+
+        <div className="side-card tool">
+          <h3>🚀 推荐工具</h3>
+          <p>高速下载 · 效率神器</p>
+          <span className="btn">立即获取</span>
+        </div>
+
+        <div className="side-block">
+          <h4>📂 文章分类</h4>
+          <div className="cat-list">
+            {categories.map(([name, count]) => (
+              <a key={name} href="/categories">
+                <span>{name}</span>
+                <span className="cnt">{count}</span>
+              </a>
+            ))}
+          </div>
+        </div>
+      </aside>
+    </div>
   );
 }

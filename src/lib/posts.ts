@@ -16,7 +16,8 @@ const postsDirectory = path.join(process.cwd(), "content/posts");
 export interface PostMeta {
   slug: string; // 文章的网址标识，来自文件名，例如 hello-world.md -> hello-world
   title: string; // 标题
-  date: string; // 发布日期，例如 2026-10-16
+  date: string; // 显示用的日期，例如 2026年10月16日
+  rawDate: string; // 原始日期，仅用于排序
   description: string; // 摘要，显示在列表页
   category: string; // 分类
   tags: string[]; // 标签
@@ -35,6 +36,14 @@ function getPostFiles(): string[] {
   return fs.readdirSync(postsDirectory).filter((f) => f.endsWith(".md"));
 }
 
+// 把 YAML 里的日期统一格式化成「2026年10月14日」
+function formatDate(raw: unknown): string {
+  if (!raw) return "";
+  const d = raw instanceof Date ? raw : new Date(String(raw));
+  if (isNaN(d.getTime())) return String(raw);
+  return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`;
+}
+
 // 把单个文件解析成元信息
 function parseMeta(fileName: string): PostMeta {
   const slug = fileName.replace(/\.md$/, "");
@@ -45,7 +54,8 @@ function parseMeta(fileName: string): PostMeta {
   return {
     slug,
     title: data.title ?? slug,
-    date: data.date ? String(data.date) : "",
+    date: formatDate(data.date),
+    rawDate: data.date ? (data.date instanceof Date ? data.date.toISOString() : String(data.date)) : "",
     description: data.description ?? "",
     category: data.category ?? "未分类",
     tags: Array.isArray(data.tags) ? data.tags : [],
@@ -58,7 +68,7 @@ function parseMeta(fileName: string): PostMeta {
 export function getAllPostsMeta(): PostMeta[] {
   return getPostFiles()
     .map(parseMeta)
-    .sort((a, b) => (a.date < b.date ? 1 : -1));
+    .sort((a, b) => (a.rawDate < b.rawDate ? 1 : -1));
 }
 
 // 获取所有分类及其文章数量
