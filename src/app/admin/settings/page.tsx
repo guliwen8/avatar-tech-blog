@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AdminShell } from "../AdminShell";
+import { AdminShell, useAdminReady } from "../AdminShell";
 import { getSettings, saveSettings } from "../store";
 import { useToast } from "../useToast";
 
-export default function SettingsPage() {
+function SettingsInner() {
+  const ready = useAdminReady();
   const { show, node } = useToast();
   const [siteName, setSiteName] = useState("阿凡达博客");
   const [sub, setSub] = useState("技术折腾笔记");
@@ -14,13 +15,14 @@ export default function SettingsPage() {
   const [newPwd, setNewPwd] = useState("");
 
   useEffect(() => {
+    if (!ready) return;
     getSettings().then((s) => {
       if (s.siteName) setSiteName(s.siteName);
       if (s.siteSub) setSub(s.siteSub);
       if (s.siteDesc) setDesc(s.siteDesc);
       if (s.primaryColor) setPrimary(s.primaryColor);
-    });
-  }, []);
+    }).catch(() => {});
+  }, [ready]);
 
   async function saveBasic() {
     await saveSettings({
@@ -43,7 +45,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <AdminShell title="站点设置" active="/admin/settings">
+    <>
       {node}
       <div className="panel">
         <div className="panel-head">
@@ -101,6 +103,14 @@ export default function SettingsPage() {
           </button>
         </div>
       </div>
+    </>
+  );
+}
+
+export default function SettingsPage() {
+  return (
+    <AdminShell title="站点设置" active="/admin/settings">
+      <SettingsInner />
     </AdminShell>
   );
 }

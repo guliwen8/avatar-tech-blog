@@ -1,21 +1,22 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AdminShell } from "../AdminShell";
+import { AdminShell, useAdminReady } from "../AdminShell";
 import { getOrders, type Order } from "../store";
 
-export default function OrdersPage() {
+function OrdersInner() {
+  const ready = useAdminReady();
   const [orders, setOrders] = useState<Order[]>([]);
 
   useEffect(() => {
-    getOrders().then(setOrders);
-  }, []);
+    if (ready) getOrders().then(setOrders).catch(() => {});
+  }, [ready]);
 
   const paid = orders.filter((o) => o.status === "paid");
   const revenue = paid.reduce((s, o) => s + o.amount, 0);
 
   return (
-    <AdminShell title="订单记录" active="/admin/orders">
+    <>
       <div className="stat-grid">
         <div className="stat-card">
           <div className="n">{orders.length}</div>
@@ -76,6 +77,14 @@ export default function OrdersPage() {
           </tbody>
         </table>
       </div>
+    </>
+  );
+}
+
+export default function OrdersPage() {
+  return (
+    <AdminShell title="订单记录" active="/admin/orders">
+      <OrdersInner />
     </AdminShell>
   );
 }

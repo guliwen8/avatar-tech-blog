@@ -1,20 +1,21 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AdminShell } from "../AdminShell";
+import { AdminShell, useAdminReady } from "../AdminShell";
 import { getPosts, deletePost, type AdminPost } from "../store";
 import { useToast } from "../useToast";
 
-export default function PostsPage() {
+function PostsInner() {
+  const ready = useAdminReady();
   const [posts, setPosts] = useState<AdminPost[]>([]);
   const { show, node } = useToast();
 
   function refresh() {
-    getPosts().then(setPosts);
+    getPosts().then(setPosts).catch(() => {});
   }
   useEffect(() => {
-    refresh();
-  }, []);
+    if (ready) refresh();
+  }, [ready]);
 
   async function onDelete(slug: string, title: string) {
     if (confirm(`确定删除文章「${title}」吗？此操作不可撤销。`)) {
@@ -25,7 +26,7 @@ export default function PostsPage() {
   }
 
   return (
-    <AdminShell title="文章管理" active="/admin/posts">
+    <>
       {node}
       <div className="panel">
         <div className="panel-head">
@@ -82,6 +83,14 @@ export default function PostsPage() {
           </tbody>
         </table>
       </div>
+    </>
+  );
+}
+
+export default function PostsPage() {
+  return (
+    <AdminShell title="文章管理" active="/admin/posts">
+      <PostsInner />
     </AdminShell>
   );
 }

@@ -1,20 +1,21 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AdminShell } from "../AdminShell";
+import { AdminShell, useAdminReady } from "../AdminShell";
 import { getAds, saveAd, deleteAd, type AdSlot } from "../store";
 import { useToast } from "../useToast";
 
-export default function AdsPage() {
+function AdsInner() {
+  const ready = useAdminReady();
   const [ads, setAds] = useState<AdSlot[]>([]);
   const { show, node } = useToast();
 
   function refresh() {
-    getAds().then(setAds);
+    getAds().then(setAds).catch(() => {});
   }
   useEffect(() => {
-    refresh();
-  }, []);
+    if (ready) refresh();
+  }, [ready]);
 
   async function update(ad: AdSlot, patch: Partial<AdSlot>) {
     await saveAd({ ...ad, ...patch });
@@ -41,7 +42,7 @@ export default function AdsPage() {
   }
 
   return (
-    <AdminShell title="广告位" active="/admin/ads">
+    <>
       {node}
       <div className="panel">
         <div className="panel-head">
@@ -138,6 +139,14 @@ export default function AdsPage() {
           可用于推广会员、工具、合作内容等。
         </p>
       </div>
+    </>
+  );
+}
+
+export default function AdsPage() {
+  return (
+    <AdminShell title="广告位" active="/admin/ads">
+      <AdsInner />
     </AdminShell>
   );
 }

@@ -2,22 +2,22 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { AdminShell } from "../../AdminShell";
+import { AdminShell, useAdminReady } from "../../AdminShell";
 import { getPost, savePost, type AdminPost } from "../../store";
 import { useToast } from "../../useToast";
 
-// 把标题转成 slug（网址）
+// 把标题转成 slug（只保留英文数字连字符，纯中文用 post-时间戳）
 function toSlug(s: string): string {
-  return (
-    s
-      .trim()
-      .toLowerCase()
-      .replace(/[^\w\u4e00-\u9fa5]+/g, "-")
-      .replace(/^-+|-+$/g, "") || "post-" + Date.now()
-  );
+  const cleaned = s
+    .trim()
+    .toLowerCase()
+    .replace(/[^\w]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return cleaned || "post-" + Date.now();
 }
 
 function EditForm() {
+  const ready = useAdminReady();
   const params = useSearchParams();
   const editSlug = params.get("slug");
   const isEdit = !!editSlug;
@@ -36,12 +36,12 @@ function EditForm() {
   });
 
   useEffect(() => {
-    if (editSlug) {
+    if (ready && editSlug) {
       getPost(editSlug).then((p) => {
         if (p) setForm(p);
-      });
+      }).catch(() => {});
     }
-  }, [editSlug]);
+  }, [ready, editSlug]);
 
   function set<K extends keyof AdminPost>(key: K, val: AdminPost[K]) {
     setForm((f) => ({ ...f, [key]: val }));

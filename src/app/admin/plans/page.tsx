@@ -1,20 +1,21 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AdminShell } from "../AdminShell";
+import { AdminShell, useAdminReady } from "../AdminShell";
 import { getPlans, savePlan, deletePlan, type MemberPlan } from "../store";
 import { useToast } from "../useToast";
 
-export default function PlansPage() {
+function PlansInner() {
+  const ready = useAdminReady();
   const [plans, setPlans] = useState<MemberPlan[]>([]);
   const { show, node } = useToast();
 
   function refresh() {
-    getPlans().then(setPlans);
+    getPlans().then(setPlans).catch(() => {});
   }
   useEffect(() => {
-    refresh();
-  }, []);
+    if (ready) refresh();
+  }, [ready]);
 
   async function update(plan: MemberPlan, patch: Partial<MemberPlan>) {
     await savePlan({ ...plan, ...patch });
@@ -42,7 +43,7 @@ export default function PlansPage() {
   }
 
   return (
-    <AdminShell title="会员套餐" active="/admin/plans">
+    <>
       {node}
       <div className="panel">
         <div className="panel-head">
@@ -129,9 +130,17 @@ export default function PlansPage() {
           <a href="/vip" target="_blank" style={{ color: "#24a5db" }}>
             {" "}会员页 /vip
           </a>
-          。支付收款（微信 / 支付宝）将在部署到群晖 NAS、接入支付接口后开通。
+          。支付收款（微信 / 支付宝）将在接入支付接口后开通。
         </p>
       </div>
+    </>
+  );
+}
+
+export default function PlansPage() {
+  return (
+    <AdminShell title="会员套餐" active="/admin/plans">
+      <PlansInner />
     </AdminShell>
   );
 }

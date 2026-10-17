@@ -1,24 +1,26 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AdminShell } from "./AdminShell";
+import { AdminShell, useAdminReady } from "./AdminShell";
 import { getPosts, getPlans, getAds, type AdminPost } from "./store";
 
-export default function DashboardPage() {
+function DashboardInner() {
+  const ready = useAdminReady();
   const [posts, setPosts] = useState<AdminPost[]>([]);
   const [planCount, setPlanCount] = useState(0);
   const [adCount, setAdCount] = useState(0);
 
   useEffect(() => {
-    getPosts().then(setPosts);
-    getPlans().then((p) => setPlanCount(p.length));
-    getAds().then((a) => setAdCount(a.length));
-  }, []);
+    if (!ready) return; // 未登录确认前不请求，避免 401
+    getPosts().then(setPosts).catch(() => {});
+    getPlans().then((p) => setPlanCount(p.length)).catch(() => {});
+    getAds().then((a) => setAdCount(a.length)).catch(() => {});
+  }, [ready]);
 
   const published = posts.filter((p) => p.published).length;
 
   return (
-    <AdminShell title="仪表盘" active="/admin">
+    <>
       <div className="stat-grid">
         <div className="stat-card">
           <div className="n">{posts.length}</div>
@@ -79,11 +81,18 @@ export default function DashboardPage() {
       <div className="panel">
         <h3 style={{ fontSize: 16, marginBottom: 10 }}>👋 欢迎使用管理后台</h3>
         <p style={{ color: "#6b7280", fontSize: 14, lineHeight: 1.8 }}>
-          这是后台的<b>界面演示版</b>，数据暂存在浏览器本地，你可以自由体验
-          文章的增删改、分类管理、结构模块编辑等全部操作。
-          等部署到群晖 NAS 时，接上真实数据库，所有改动就会实时保存并生效。
+          在这里管理你的博客：写文章、改分类、设会员套餐、配广告位、看订单。
+          所有改动都会实时保存到数据库。
         </p>
       </div>
+    </>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <AdminShell title="仪表盘" active="/admin">
+      <DashboardInner />
     </AdminShell>
   );
 }

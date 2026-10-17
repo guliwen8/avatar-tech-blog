@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AdminShell } from "../AdminShell";
+import { AdminShell, useAdminReady } from "../AdminShell";
 import {
   getModules,
   saveModule,
@@ -10,16 +10,17 @@ import {
 } from "../store";
 import { useToast } from "../useToast";
 
-export default function ModulesPage() {
+function ModulesInner() {
+  const ready = useAdminReady();
   const [mods, setMods] = useState<SiteModule[]>([]);
   const { show, node } = useToast();
 
   function refresh() {
-    getModules().then(setMods);
+    getModules().then(setMods).catch(() => {});
   }
   useEffect(() => {
-    refresh();
-  }, []);
+    if (ready) refresh();
+  }, [ready]);
 
   async function update(mod: SiteModule, patch: Partial<SiteModule>) {
     await saveModule({ ...mod, ...patch });
@@ -93,7 +94,7 @@ export default function ModulesPage() {
   }
 
   return (
-    <AdminShell title="结构模块" active="/admin/modules">
+    <>
       {node}
 
       <div className="panel">
@@ -122,9 +123,17 @@ export default function ModulesPage() {
       <div className="panel">
         <p style={{ color: "#6b7280", fontSize: 13, lineHeight: 1.8 }}>
           💡 这里可以增删改博客的<b>结构模块</b>：顶部导航菜单项、右侧边栏的推广卡片。
-          当前为演示版，改动暂存浏览器本地；上线接后端后，保存即实时作用到前台网站。
+          保存后实时作用到前台网站。
         </p>
       </div>
+    </>
+  );
+}
+
+export default function ModulesPage() {
+  return (
+    <AdminShell title="结构模块" active="/admin/modules">
+      <ModulesInner />
     </AdminShell>
   );
 }

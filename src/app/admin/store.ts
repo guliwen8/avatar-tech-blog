@@ -58,15 +58,22 @@ export interface Order {
   paid_at: string | null;
 }
 
+class AuthError extends Error {
+  constructor() {
+    super("未登录");
+    this.name = "AuthError";
+  }
+}
+
 async function api<T>(url: string, opts?: RequestInit): Promise<T> {
   const res = await fetch(url, {
     ...opts,
     headers: { "Content-Type": "application/json", ...(opts?.headers || {}) },
   });
   if (res.status === 401) {
-    // 未登录 → 跳回登录
-    window.location.href = "/admin";
-    throw new Error("未登录");
+    // 不再强制跳转（避免在 /admin 页反复刷新造成死循环）。
+    // 抛出 AuthError，由页面决定如何处理。
+    throw new AuthError();
   }
   return res.json();
 }
