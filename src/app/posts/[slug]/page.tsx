@@ -12,7 +12,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const post = await getPostBySlug(slug);
+  const post = await getPostBySlug(decodeURIComponent(slug));
   if (!post) return { title: "文章未找到" };
   return {
     title: `${post.title} · 阿凡达的技术博客`,
@@ -27,7 +27,7 @@ export default async function PostPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const post = await getPostBySlug(slug);
+  const post = await getPostBySlug(decodeURIComponent(slug));
   if (!post) notFound();
 
   return (

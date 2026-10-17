@@ -35,7 +35,7 @@ export default function CategoriesPage() {
               .map((post) => (
                 <a
                   key={post.slug}
-                  href={`/posts/${post.slug}`}
+                  href={`/posts/${encodeURIComponent(post.slug)}`}
                   className="recent-item"
                 >
                   <span className="t" style={{ fontSize: 15 }}>

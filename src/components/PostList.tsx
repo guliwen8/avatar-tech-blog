@@ -24,7 +24,7 @@ function Card({ post }: { post: PostMeta }) {
     <div className="post-card">
       <div className="masonry-inner">
         <a
-          href={`/posts/${post.slug}`}
+          href={`/posts/${encodeURIComponent(post.slug)}`}
           className="entry-thumbnail"
           style={post.cover ? undefined : { background: gradientFor(post.category || post.title) }}
         >
@@ -35,7 +35,7 @@ function Card({ post }: { post: PostMeta }) {
           )}
         </a>
         <h2 className="entry-title">
-          <a href={`/posts/${post.slug}`}>{post.title}</a>
+          <a href={`/posts/${encodeURIComponent(post.slug)}`}>{post.title}</a>
         </h2>
         <div className="entry-meta">
           <span className="cat">{post.category}</span>
@@ -119,7 +119,7 @@ export function PostList({
         <div className="side-box">
           <h4>🕐 最近文章</h4>
           {posts.slice(0, 5).map((p) => (
-            <a key={p.slug} href={`/posts/${p.slug}`} className="recent-item">
+            <a key={p.slug} href={`/posts/${encodeURIComponent(p.slug)}`} className="recent-item">
               <span className="t">{p.title}</span>
               <span className="d">{p.date}</span>
             </a>

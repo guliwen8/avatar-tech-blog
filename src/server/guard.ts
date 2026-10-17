@@ -9,13 +9,13 @@ export async function requireAuth(): Promise<NextResponse | null> {
   return null;
 }
 
-// slug 生成（支持中文）
+// slug 生成：只保留英文、数字、连字符（去掉中文等特殊字符，保证网址安全）。
+// 纯中文标题会得到空串，此时用 post-时间戳 作为 slug。
 export function toSlug(s: string): string {
-  return (
-    s
-      .trim()
-      .toLowerCase()
-      .replace(/[^\w\u4e00-\u9fa5]+/g, "-")
-      .replace(/^-+|-+$/g, "") || "post-" + Date.now()
-  );
+  const cleaned = s
+    .trim()
+    .toLowerCase()
+    .replace(/[^\w]+/g, "-") // 非 [a-z0-9_] 一律转连字符（含中文）
+    .replace(/^-+|-+$/g, "");
+  return cleaned || "post-" + Date.now();
 }
