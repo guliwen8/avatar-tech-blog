@@ -1,21 +1,30 @@
 # ===== 阶段 1：安装依赖（含原生模块 better-sqlite3 的编译）=====
-FROM node:22-alpine AS deps
+# 使用国内镜像源，避免大陆拉取 Docker Hub 超时
+FROM docker.m.daocloud.io/library/node:22-alpine AS deps
 WORKDIR /app
 # 原生模块编译需要这些工具
 RUN apk add --no-cache python3 make g++ libc6-compat
 COPY package.json package-lock.json* ./
-RUN npm install --no-audit --no-fund
+# 使用 npm 国内镜像源 + 加大重试超时，避免大陆 npm 安装超时
+RUN npm config set registry https://registry.npmmirror.com \
+    && npm config set fetch-retries 5 \
+    && npm config set fetch-retry-mintimeout 20000 \
+    && npm config set fetch-retry-maxtimeout 120000 \
+    && npm config set fetch-timeout 120000 \
+    && npm install --no-audit --no-fund
 
 # ===== 阶段 2：构建 =====
-FROM node:22-alpine AS builder
+FROM docker.m.daocloud.io/library/node:22-alpine AS builder
 WORKDIR /app
 RUN apk add --no-cache libc6-compat
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+# 确保 public 目录存在（项目没有 public 时构建会报错）
+RUN mkdir -p public
 RUN npm run build
 
 # ===== 阶段 3：运行 =====
-FROM node:22-alpine AS runner
+FROM docker.m.daocloud.io/library/node:22-alpine AS runner
 WORKDIR /app
 RUN apk add --no-cache libc6-compat
 ENV NODE_ENV=production
