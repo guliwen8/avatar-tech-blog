@@ -19,6 +19,8 @@ export interface PostMeta {
   tags: string[];
   cover?: string;
   readingTime: string;
+  isVip: boolean;
+  views: number;
 }
 
 export interface Post extends PostMeta {
@@ -44,6 +46,8 @@ function toMeta(p: DBPost): PostMeta {
     cover: p.cover || undefined,
     readingTime:
       Math.max(1, Math.round(readingTime(p.content).minutes)) + " 分钟阅读",
+    isVip: p.is_vip,
+    views: p.views,
   };
 }
 

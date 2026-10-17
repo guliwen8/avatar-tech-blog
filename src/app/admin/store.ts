@@ -14,6 +14,8 @@ export interface AdminPost {
   cover: string;
   content: string;
   published: boolean;
+  is_vip: boolean;
+  views: number;
 }
 
 export interface SiteModule {

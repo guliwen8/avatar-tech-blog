@@ -11,6 +11,8 @@ export interface Post {
   cover: string;
   content: string;
   published: boolean;
+  is_vip: boolean;
+  views: number;
 }
 export interface Plan {
   id: string;
@@ -65,6 +67,8 @@ function rowToPost(r: any): Post {
     cover: r.cover,
     content: r.content,
     published: !!r.published,
+    is_vip: !!r.is_vip,
+    views: r.views || 0,
   };
 }
 export function listPosts(onlyPublished = false): Post[] {
@@ -80,20 +84,27 @@ export function getPost(slug: string): Post | null {
 export function upsertPost(p: Post) {
   getDB()
     .prepare(
-      `INSERT INTO posts (slug,title,date,category,tags,description,cover,content,published)
-       VALUES (@slug,@title,@date,@category,@tags,@description,@cover,@content,@published)
+      `INSERT INTO posts (slug,title,date,category,tags,description,cover,content,published,is_vip,views)
+       VALUES (@slug,@title,@date,@category,@tags,@description,@cover,@content,@published,@is_vip,@views)
        ON CONFLICT(slug) DO UPDATE SET
          title=@title, date=@date, category=@category, tags=@tags,
-         description=@description, cover=@cover, content=@content, published=@published`
+         description=@description, cover=@cover, content=@content,
+         published=@published, is_vip=@is_vip`
     )
     .run({
       ...p,
       tags: JSON.stringify(p.tags),
       published: p.published ? 1 : 0,
+      is_vip: p.is_vip ? 1 : 0,
+      views: p.views || 0,
     });
 }
 export function deletePost(slug: string) {
   getDB().prepare("DELETE FROM posts WHERE slug = ?").run(slug);
+}
+// 文章浏览量 +1
+export function incrementViews(slug: string) {
+  getDB().prepare("UPDATE posts SET views = views + 1 WHERE slug = ?").run(slug);
 }
 
 // ===== 套餐 =====

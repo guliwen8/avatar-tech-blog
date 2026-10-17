@@ -33,6 +33,8 @@ function EditForm() {
     cover: "",
     content: "",
     published: true,
+    is_vip: false,
+    views: 0,
   });
 
   useEffect(() => {
@@ -152,6 +154,18 @@ function EditForm() {
               style={{ width: "auto", marginRight: 8 }}
             />
             立即发布（取消勾选则存为草稿）
+          </label>
+        </div>
+
+        <div className="form-row">
+          <label>
+            <input
+              type="checkbox"
+              checked={form.is_vip}
+              onChange={(e) => set("is_vip", e.target.checked)}
+              style={{ width: "auto", marginRight: 8 }}
+            />
+            👑 标记为 VIP 会员专属内容
           </label>
         </div>
 

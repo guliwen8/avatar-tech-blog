@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { getPostBySlug } from "@/lib/posts";
+import { incrementViews } from "@/server/repo";
 
 // 文章来自数据库，动态渲染
 export const dynamic = "force-dynamic";
@@ -27,8 +28,14 @@ export default async function PostPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const post = await getPostBySlug(decodeURIComponent(slug));
+  const realSlug = decodeURIComponent(slug);
+  const post = await getPostBySlug(realSlug);
   if (!post) notFound();
+
+  // 浏览量 +1
+  try {
+    incrementViews(realSlug);
+  } catch {}
 
   return (
     <div className="article-wrap">
@@ -36,11 +43,15 @@ export default async function PostPage({
         <a href="/" className="back">
           ← 返回首页
         </a>
-        <h1>{post.title}</h1>
+        <h1>
+          {post.isVip && <span className="vip-tag-inline">👑 VIP</span>}
+          {post.title}
+        </h1>
         <div className="meta">
           <span className="cat">{post.category}</span>
           <span>📅 {post.date}</span>
           <span>· {post.readingTime}</span>
+          <span>· 👁 {post.views} 阅读</span>
         </div>
         <div
           className="prose"

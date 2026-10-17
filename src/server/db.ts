@@ -36,6 +36,8 @@ function init(db: Database.Database) {
       cover       TEXT NOT NULL DEFAULT '',
       content     TEXT NOT NULL DEFAULT '',
       published   INTEGER NOT NULL DEFAULT 1,
+      is_vip      INTEGER NOT NULL DEFAULT 0,
+      views       INTEGER NOT NULL DEFAULT 0,
       created_at  TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
@@ -101,7 +103,20 @@ function init(db: Database.Database) {
     );
   `);
 
+  migrate(db);
   seed(db);
+}
+
+// 兼容旧数据库：缺失的新列自动补上（不会丢数据）
+function migrate(db: Database.Database) {
+  const cols = db.prepare("PRAGMA table_info(posts)").all() as { name: string }[];
+  const names = cols.map((c) => c.name);
+  if (!names.includes("is_vip")) {
+    db.exec("ALTER TABLE posts ADD COLUMN is_vip INTEGER NOT NULL DEFAULT 0");
+  }
+  if (!names.includes("views")) {
+    db.exec("ALTER TABLE posts ADD COLUMN views INTEGER NOT NULL DEFAULT 0");
+  }
 }
 
 // 首次运行时写入初始数据
@@ -111,8 +126,8 @@ function seed(db: Database.Database) {
   };
   if (postCount.c === 0) {
     const ins = db.prepare(
-      `INSERT INTO posts (slug,title,date,category,tags,description,cover,content,published)
-       VALUES (@slug,@title,@date,@category,@tags,@description,@cover,@content,@published)`
+      `INSERT INTO posts (slug,title,date,category,tags,description,cover,content,published,is_vip,views)
+       VALUES (@slug,@title,@date,@category,@tags,@description,@cover,@content,@published,@is_vip,@views)`
     );
     const posts = [
       {
@@ -127,6 +142,8 @@ function seed(db: Database.Database) {
         content:
           "## 欢迎 👋\n\n这是**阿凡达的技术博客**的第一篇文章。以后我会在这里分享技术教程、折腾笔记和踩坑经验。\n\n## 怎么写新文章？\n\n现在你可以直接在后台写文章了，点「发布」就会保存到数据库并显示在网站上。",
         published: 1,
+        is_vip: 0,
+        views: 328,
       },
       {
         slug: "deploy-to-synology-nas",
@@ -141,6 +158,8 @@ function seed(db: Database.Database) {
         content:
           "## 为什么用 NAS 部署？\n\n对大陆用户来说，访问更稳定，数据在自己手里。\n\n## 步骤\n\n1. 安装 Container Manager\n2. 构建镜像\n3. 运行容器\n4. 配置外网访问",
         published: 1,
+        is_vip: 1,
+        views: 1024,
       },
       {
         slug: "markdown-guide",
@@ -154,6 +173,8 @@ function seed(db: Database.Database) {
         content:
           "## 标题\n\n用 `##` 表示二级标题。\n\n## 文字\n\n**加粗**、*斜体*、`行内代码`。\n\n## 列表\n\n- 苹果\n- 香蕉",
         published: 1,
+        is_vip: 0,
+        views: 756,
       },
     ];
     const tx = db.transaction(() => posts.forEach((p) => ins.run(p)));

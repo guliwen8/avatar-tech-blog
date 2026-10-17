@@ -887,3 +887,163 @@ strong {
   line-height: 1.7;
   margin: 12px 0 20px;
 }
+
+/* ===== 复刻零度：三栏列表布局（左分类 + 中网格 + 右广告）===== */
+.list-layout {
+  max-width: 1380px;
+  margin: 0 auto;
+  padding: 24px 40px 60px;
+  display: grid;
+  grid-template-columns: 190px 1fr 300px;
+  gap: 24px;
+  align-items: start;
+}
+
+/* 左侧分类栏 */
+.cat-sidebar {
+  position: sticky;
+  top: 100px;
+}
+.cat-box {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 14px;
+  box-shadow: var(--shadow);
+}
+.cat-box h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-soft);
+  padding: 0 8px 10px;
+}
+.cat-nav {
+  list-style: none;
+  margin: 0 0 14px;
+  padding: 0;
+}
+.cat-nav button {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 9px 12px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--text-body);
+  cursor: pointer;
+  text-align: left;
+}
+.cat-nav button:hover {
+  background: var(--bg);
+  color: var(--primary);
+}
+.cat-nav button.active {
+  background: var(--primary);
+  color: #fff;
+}
+.cat-nav .cnt {
+  font-size: 12px;
+  opacity: 0.7;
+}
+.cat-search {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 13px;
+  outline: none;
+}
+.cat-search:focus {
+  border-color: var(--primary);
+}
+
+/* 中间内容区标题 */
+.list-main {
+  min-width: 0;
+}
+.list-head {
+  margin-bottom: 18px;
+}
+.list-head h1 {
+  font-size: 26px;
+  font-weight: 300;
+  letter-spacing: -0.5px;
+  color: var(--text);
+}
+.list-head p {
+  font-size: 13px;
+  color: var(--text-soft);
+  margin-top: 2px;
+}
+/* 列表布局下的网格改 2 列（因为中间窄了）*/
+.list-main .post-grid {
+  column-count: 2;
+}
+
+/* 卡片 VIP 角标 */
+.vip-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: linear-gradient(135deg, #ffb347, #ff8c00);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 6px;
+  z-index: 2;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
+/* 卡片阅读量 */
+.entry-meta .views {
+  margin-left: auto;
+  color: var(--text-soft);
+}
+
+@media (max-width: 1100px) {
+  .list-layout {
+    grid-template-columns: 170px 1fr;
+  }
+  .list-layout .sidebar {
+    display: none;
+  }
+}
+@media (max-width: 760px) {
+  .list-layout {
+    grid-template-columns: 1fr;
+    padding: 16px 20px 40px;
+  }
+  .cat-sidebar {
+    position: static;
+  }
+  .cat-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .cat-nav li {
+    flex: 0 0 auto;
+  }
+  .list-main .post-grid {
+    column-count: 1;
+  }
+}
+
+/* 文章详情页标题前的 VIP 标记 */
+.vip-tag-inline {
+  display: inline-block;
+  background: linear-gradient(135deg, #ffb347, #ff8c00);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 6px;
+  margin-right: 10px;
+  vertical-align: middle;
+}

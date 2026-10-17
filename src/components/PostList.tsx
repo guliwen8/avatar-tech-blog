@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import type { PostMeta } from "@/lib/posts";
 
-// 无图文章的自动渐变封面（按分类取色）
 const GRADIENTS = [
   "linear-gradient(135deg, #24a5db 0%, #4f6bff 100%)",
   "linear-gradient(135deg, #f6416c 0%, #ff8c42 100%)",
@@ -18,7 +17,13 @@ function gradientFor(key: string): string {
   return GRADIENTS[h % GRADIENTS.length];
 }
 
-// 单张卡片 —— 还原零度 gridzone 结构：缩略图 + 标题 + 日期meta
+// 阅读量格式化（1024 -> 1k）
+function fmtViews(n: number): string {
+  if (n >= 10000) return (n / 10000).toFixed(1) + "w";
+  if (n >= 1000) return (n / 1000).toFixed(1) + "k";
+  return String(n);
+}
+
 function Card({ post }: { post: PostMeta }) {
   return (
     <div className="post-card">
@@ -33,6 +38,7 @@ function Card({ post }: { post: PostMeta }) {
           ) : (
             <span className="thumb-text">{post.title}</span>
           )}
+          {post.isVip && <span className="vip-badge">👑 VIP</span>}
         </a>
         <h2 className="entry-title">
           <a href={`/posts/${encodeURIComponent(post.slug)}`}>{post.title}</a>
@@ -41,6 +47,7 @@ function Card({ post }: { post: PostMeta }) {
           <span className="cat">{post.category}</span>
           <span className="dot">·</span>
           <span>📅 {post.date}</span>
+          <span className="views">👁 {fmtViews(post.views)}</span>
         </div>
       </div>
     </div>
@@ -62,47 +69,74 @@ export function PostList({
   ads?: AdItem[];
 }) {
   const [query, setQuery] = useState("");
+  const [activeCat, setActiveCat] = useState("全部");
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return posts;
-    return posts.filter(
-      (p) =>
-        p.title.toLowerCase().includes(q) ||
-        p.description.toLowerCase().includes(q) ||
-        p.category.toLowerCase().includes(q) ||
-        p.tags.some((t) => t.toLowerCase().includes(q))
-    );
-  }, [query, posts]);
-
+  // 分类列表（含"全部"）
   const categories = useMemo(() => {
     const map = new Map<string, number>();
     for (const p of posts) map.set(p.category, (map.get(p.category) ?? 0) + 1);
-    return Array.from(map.entries());
+    return [["全部", posts.length] as [string, number], ...Array.from(map.entries())];
   }, [posts]);
 
-  return (
-    <div className="layout">
-      {/* 左侧文章网格 */}
-      <div className="post-grid">
-        {filtered.length === 0 ? (
-          <p className="empty">没有找到匹配的文章 🤔</p>
-        ) : (
-          filtered.map((post) => <Card key={post.slug} post={post} />)
-        )}
-      </div>
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return posts.filter((p) => {
+      const matchCat = activeCat === "全部" || p.category === activeCat;
+      const matchQ =
+        !q ||
+        p.title.toLowerCase().includes(q) ||
+        p.description.toLowerCase().includes(q) ||
+        p.category.toLowerCase().includes(q) ||
+        p.tags.some((t) => t.toLowerCase().includes(q));
+      return matchCat && matchQ;
+    });
+  }, [query, activeCat, posts]);
 
-      {/* 右侧栏 */}
-      <aside className="sidebar">
-        <div className="side-box">
+  return (
+    <div className="list-layout">
+      {/* 左侧分类栏（零度结构）*/}
+      <aside className="cat-sidebar">
+        <div className="cat-box">
+          <h4>分类</h4>
+          <ul className="cat-nav">
+            {categories.map(([name, count]) => (
+              <li key={name}>
+                <button
+                  className={activeCat === name ? "active" : ""}
+                  onClick={() => setActiveCat(name)}
+                >
+                  <span>{name}</span>
+                  <span className="cnt">{count}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
           <input
+            className="cat-search"
             placeholder="🔍 搜索文章…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
         </div>
+      </aside>
 
-        {/* 广告位：来自后台数据库，可在后台增删改 */}
+      {/* 中间文章网格 */}
+      <div className="list-main">
+        <div className="list-head">
+          <h1>{activeCat === "全部" ? "全部内容" : activeCat}</h1>
+          <p>共 {filtered.length} 篇</p>
+        </div>
+        <div className="post-grid">
+          {filtered.length === 0 ? (
+            <p className="empty">没有找到匹配的文章 🤔</p>
+          ) : (
+            filtered.map((post) => <Card key={post.slug} post={post} />)
+          )}
+        </div>
+      </div>
+
+      {/* 右侧广告位 */}
+      <aside className="sidebar">
         {ads.map((ad) =>
           ad.image ? (
             <a key={ad.id} href={ad.link} className="side-ad-img">
@@ -115,28 +149,6 @@ export function PostList({
             </a>
           )
         )}
-
-        <div className="side-box">
-          <h4>🕐 最近文章</h4>
-          {posts.slice(0, 5).map((p) => (
-            <a key={p.slug} href={`/posts/${encodeURIComponent(p.slug)}`} className="recent-item">
-              <span className="t">{p.title}</span>
-              <span className="d">{p.date}</span>
-            </a>
-          ))}
-        </div>
-
-        <div className="side-box">
-          <h4>📂 文章分类</h4>
-          <div className="cat-list">
-            {categories.map(([name, count]) => (
-              <a key={name} href="/categories">
-                <span>{name}</span>
-                <span className="cnt">{count}</span>
-              </a>
-            ))}
-          </div>
-        </div>
       </aside>
     </div>
   );

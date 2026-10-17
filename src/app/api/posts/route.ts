@@ -30,6 +30,8 @@ export async function POST(req: NextRequest) {
     cover: body.cover || "",
     content: body.content || "",
     published: body.published ?? true,
+    is_vip: body.is_vip ?? false,
+    views: body.views ?? 0,
   };
   upsertPost(post);
   return NextResponse.json({ ok: true, slug: post.slug });
