@@ -6,3 +6,7 @@ Dockerfile
 .dockerignore
 npm-debug.log
 README.md
+
+# 数据库由持久化卷提供，不能进入镜像构建上下文
+data
+*.tsbuildinfo

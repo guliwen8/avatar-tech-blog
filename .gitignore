@@ -14,3 +14,6 @@
 # 系统文件
 .DS_Store
 *.log
+
+# TypeScript 增量编译缓存
+*.tsbuildinfo

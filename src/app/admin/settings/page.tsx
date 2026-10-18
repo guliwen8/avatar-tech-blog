@@ -12,16 +12,22 @@ function SettingsInner() {
   const [sub, setSub] = useState("技术折腾笔记");
   const [desc, setDesc] = useState("");
   const [primary, setPrimary] = useState("#24a5db");
+  const [contactEmail, setContactEmail] = useState("");
+  const [consultationUrl, setConsultationUrl] = useState("");
   const [newPwd, setNewPwd] = useState("");
 
   useEffect(() => {
     if (!ready) return;
-    getSettings().then((s) => {
-      if (s.siteName) setSiteName(s.siteName);
-      if (s.siteSub) setSub(s.siteSub);
-      if (s.siteDesc) setDesc(s.siteDesc);
-      if (s.primaryColor) setPrimary(s.primaryColor);
-    }).catch(() => {});
+    getSettings()
+      .then((s) => {
+        if (s.siteName) setSiteName(s.siteName);
+        if (s.siteSub) setSub(s.siteSub);
+        if (s.siteDesc) setDesc(s.siteDesc);
+        if (s.primaryColor) setPrimary(s.primaryColor);
+        setContactEmail(s.contactEmail || "");
+        setConsultationUrl(s.consultationUrl || "");
+      })
+      .catch(() => {});
   }, [ready]);
 
   async function saveBasic() {
@@ -30,6 +36,8 @@ function SettingsInner() {
       siteSub: sub,
       siteDesc: desc,
       primaryColor: primary,
+      contactEmail: contactEmail.trim(),
+      consultationUrl: consultationUrl.trim(),
     });
     show("设置已保存");
   }
@@ -54,7 +62,10 @@ function SettingsInner() {
         <div className="form-grid">
           <div className="form-row">
             <label>站点名称</label>
-            <input value={siteName} onChange={(e) => setSiteName(e.target.value)} />
+            <input
+              value={siteName}
+              onChange={(e) => setSiteName(e.target.value)}
+            />
           </div>
           <div className="form-row">
             <label>副标题</label>
@@ -76,6 +87,30 @@ function SettingsInner() {
           <span style={{ marginLeft: 10, color: "#6b7280", fontSize: 13 }}>
             {primary}
           </span>
+        </div>
+        <div className="form-grid">
+          <div className="form-row">
+            <label htmlFor="contact-email">联系邮箱（选填）</label>
+            <input
+              id="contact-email"
+              type="email"
+              value={contactEmail}
+              onChange={(e) => setContactEmail(e.target.value)}
+              placeholder="用于人工咨询页面"
+            />
+          </div>
+          <div className="form-row">
+            <label htmlFor="consultation-url">
+              咨询渠道链接（选填，HTTPS）
+            </label>
+            <input
+              id="consultation-url"
+              type="url"
+              value={consultationUrl}
+              onChange={(e) => setConsultationUrl(e.target.value)}
+              placeholder="https://"
+            />
+          </div>
         </div>
         <div className="form-actions">
           <button className="btn btn-primary" onClick={saveBasic}>

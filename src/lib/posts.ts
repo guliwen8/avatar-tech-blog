@@ -31,7 +31,7 @@ function formatDate(raw: string): string {
   if (!raw) return "";
   const d = new Date(raw);
   if (isNaN(d.getTime())) return raw;
-  return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`;
+  return `${d.getUTCFullYear()}年${d.getUTCMonth() + 1}月${d.getUTCDate()}日`;
 }
 
 function toMeta(p: DBPost): PostMeta {

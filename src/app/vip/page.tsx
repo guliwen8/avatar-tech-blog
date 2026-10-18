@@ -1,185 +1,134 @@
-"use client";
-
-import { useEffect, useState } from "react";
-
-interface Plan {
-  id: string;
-  name: string;
-  price: number;
-  period: string;
-  features: string[];
-  highlight: boolean;
-}
-
+import { listPlans } from "@/server/repo";
+import { getAllPostsMeta } from "@/lib/posts";
+import { selectChannel } from "@/lib/catalog";
+import { MembershipPlans } from "@/components/MembershipPlans";
+import { Icon } from "@/components/Icon";
+import { PostCard } from "@/components/PostCard";
+export const dynamic = "force-dynamic";
+export const metadata = { title: "会员服务 · 阿凡达博客" };
 export default function VipPage() {
-  const [plans, setPlans] = useState<Plan[]>([]);
-  const [order, setOrder] = useState<{
-    orderId: string;
-    planName: string;
-    amount: number;
-  } | null>(null);
-  const [paid, setPaid] = useState(false);
-
-  useEffect(() => {
-    // 从后端读取启用的套餐（公开接口）
-    fetch("/api/plans/public")
-      .then((r) => r.json())
-      .then(setPlans)
-      .catch(() => setPlans([]));
-  }, []);
-
-  async function buy(plan: Plan) {
-    const res = await fetch("/api/orders", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ planId: plan.id, method: "mock" }),
-    });
-    const data = await res.json();
-    if (data.ok) {
-      setOrder({
-        orderId: data.orderId,
-        planName: data.planName,
-        amount: data.amount,
-      });
-      setPaid(false);
-    }
-  }
-
-  async function mockPay() {
-    if (!order) return;
-    const res = await fetch("/api/orders", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "mock-pay", orderId: order.orderId }),
-    });
-    const data = await res.json();
-    if (data.status === "paid") setPaid(true);
-  }
-
+  const posts = getAllPostsMeta();
+  const videos = selectChannel(posts, "videos");
+  const vip = posts.filter((p) => p.isVip);
   return (
-    <div className="vip-page">
-      <section className="vip-hero">
-        <div className="vip-eyebrow">持续更新 · 随时加入</div>
+    <div className="member-page">
+      <nav className="member-content-nav" aria-label="会员内容导航">
+        <a href="#plans">会员权益与套餐</a>
+        <a href="/videos?type=member">浏览会员视频</a>
+        <a href="/consult">人工咨询</a>
+      </nav>
+      <section className="member-hero">
+        <p className="member-kicker">持续更新 · 一起探索</p>
         <h1>
           不止是内容
           <br />
-          <span className="gold">更是专属的深度支持</span>
+          <span>更是专属的深度支持</span>
         </h1>
-        <p className="lead">
-          汇聚精选深度文章、实战教程视频与一对一人工咨询，帮你构建长期成长壁垒。
+        <p className="member-lead">
+          精选深度文章、实战教程与技术交流，
+          <br className="desktop-break" />
+          让每一次探索，都更进一步。
         </p>
-        <div className="vip-cta">
-          <a className="vip-btn gold" href="#plans">
-            💎 查看会员方案
+        <div className="member-actions">
+          <a href="/consult" className="primary-button">
+            <Icon name="chat" size={18} />
+            人工咨询
           </a>
-          <a className="vip-btn ghost" href="/">
-            📖 浏览精选内容
+          <a href="/" className="secondary-button">
+            <Icon name="book" size={18} />
+            浏览精选内容
           </a>
         </div>
-        <div className="vip-points">
-          <span>🛡️ 安全支付</span>
-          <span>⚡ 即时开通</span>
-          <span>🎖️ 专属服务</span>
-          <span>🔄 持续更新</span>
+        <div className="member-promises">
+          <span>深度文章</span>
+          <span>实战教程</span>
+          <span>人工咨询</span>
+          <span>持续更新</span>
+        </div>
+        <div className="member-stats">
+          <div>
+            <strong>{posts.length}</strong>
+            <span>已发布文章</span>
+          </div>
+          <div>
+            <strong>{videos.length}</strong>
+            <span>视频内容</span>
+          </div>
+          <div>
+            <strong>{vip.length}</strong>
+            <span>VIP 标记内容</span>
+          </div>
+          <a href="/consult">
+            <Icon name="chat" size={30} />
+            <span>联系与咨询</span>
+          </a>
         </div>
       </section>
-
-      <section className="vip-stats">
-        <div className="vip-stat">
-          <div className="n">2,268</div>
-          <div className="l">深度文章</div>
+      <section className="member-values">
+        <div className="section-heading">
+          <h2>从内容到实践</h2>
+          <p>找到有用的知识，也找到下一步的方向。</p>
         </div>
-        <div className="vip-stat">
-          <div className="n">928</div>
-          <div className="l">实战视频</div>
-        </div>
-        <div className="vip-stat">
-          <div className="n">24h</div>
-          <div className="l">人工咨询</div>
-        </div>
-        <div className="vip-stat">
-          <div className="n">∞</div>
-          <div className="l">远程服务</div>
-        </div>
-      </section>
-
-      <section className="vip-plans" id="plans">
-        <h2>选择你的会员方案</h2>
-        <div className="plan-grid">
-          {plans.map((p) => (
-            <div key={p.id} className={`plan-card ${p.highlight ? "hot" : ""}`}>
-              {p.highlight && <span className="hot-badge">最受欢迎</span>}
-              <div className="pname">{p.name}</div>
-              <div className="pprice">
-                ¥{p.price}
-                <small> {p.period}</small>
-              </div>
-              <ul>
-                {p.features.map((f, i) => (
-                  <li key={i}>{f}</li>
-                ))}
-              </ul>
-              <button className="plan-buy" onClick={() => buy(p)}>
-                立即开通
-              </button>
-            </div>
+        <div className="value-grid">
+          {[
+            {
+              icon: "book" as const,
+              title: "深度文章",
+              text: "记录实际操作、技术思路和踩坑经验，让知识可以随时回看。",
+              href: "/",
+              link: "浏览文章",
+            },
+            {
+              icon: "play" as const,
+              title: "实战教程视频",
+              text: "跟随教程探索工具和方法，把学到的知识用在实际场景里。",
+              href: "/videos",
+              link: "观看视频",
+            },
+            {
+              icon: "chat" as const,
+              title: "人工咨询",
+              text: "整理你遇到的问题、运行环境与尝试过程，再与阿凡达沟通。",
+              href: "/consult",
+              link: "准备咨询",
+            },
+          ].map((v) => (
+            <article key={v.title}>
+              <Icon name={v.icon} size={30} />
+              <h3>{v.title}</h3>
+              <p>{v.text}</p>
+              <a href={v.href}>
+                {v.link}
+                <Icon name="arrow" size={16} />
+              </a>
+            </article>
           ))}
         </div>
       </section>
-
-      {/* 下单 / 支付弹窗 */}
-      {order && (
-        <div className="pay-mask" onClick={() => setOrder(null)}>
-          <div className="pay-box" onClick={(e) => e.stopPropagation()}>
-            {!paid ? (
-              <>
-                <h3>订单确认</h3>
-                <div className="pay-info">
-                  <div>
-                    <span>套餐</span>
-                    <b>{order.planName}</b>
-                  </div>
-                  <div>
-                    <span>金额</span>
-                    <b className="price">¥{order.amount}</b>
-                  </div>
-                  <div>
-                    <span>订单号</span>
-                    <small>{order.orderId}</small>
-                  </div>
-                </div>
-                <div className="pay-qr">
-                  <div className="qr-ph">📱 支付二维码</div>
-                  <p>
-                    真实收款（微信 / 支付宝）将在接入商户号后在此显示二维码。
-                    <br />
-                    现在用下方按钮模拟完成支付。
-                  </p>
-                </div>
-                <button className="pay-btn" onClick={mockPay}>
-                  ✅ 模拟支付成功
-                </button>
-                <button className="pay-cancel" onClick={() => setOrder(null)}>
-                  取消
-                </button>
-              </>
-            ) : (
-              <div className="pay-done">
-                <div className="done-ico">🎉</div>
-                <h3>支付成功！</h3>
-                <p>
-                  感谢开通「{order.planName}」会员。
-                  <br />
-                  订单已记录，可在后台「订单记录」查看。
-                </p>
-                <button className="pay-btn" onClick={() => setOrder(null)}>
-                  完成
-                </button>
-              </div>
-            )}
+      <MembershipPlans plans={listPlans(true)} />
+      <section className="member-latest">
+        <div className="section-heading section-heading-row">
+          <div>
+            <h2>最新精选</h2>
+            <p>来自阿凡达博客的最新内容</p>
           </div>
+          <a href="/">
+            查看更多 <Icon name="arrow" size={16} />
+          </a>
         </div>
-      )}
+        <div className="post-grid">
+          {posts.slice(0, 3).map((p) => (
+            <PostCard key={p.slug} post={p} />
+          ))}
+        </div>
+      </section>
+      <section className="member-bottom">
+        <h2>下一次探索，从这里开始</h2>
+        <p>先看看内容，再选择适合自己的学习方式。</p>
+        <a href="/resources" className="primary-button">
+          浏览免费资源 <Icon name="arrow" size={18} />
+        </a>
+      </section>
     </div>
   );
 }

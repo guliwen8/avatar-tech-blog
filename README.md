@@ -1,86 +1,84 @@
-# 阿凡达的技术博客
+# 阿凡达技术博客
 
-一个用 **Next.js + Markdown** 搭建的技术博客，支持 **Vercel** 和 **群晖 NAS（Docker）** 两种部署方式。
+Next.js 15 + React 19 + SQLite 技术博客。参考零度博客的内容组织与页面结构，采用浅色天蓝配色；文章、套餐、广告、导航和站点设置由后台管理。
 
-## ✨ 功能
+## 本地运行
 
-- 📝 用 Markdown 文件写文章，无需数据库
-- 🏠 首页文章列表（封面信息、分类、阅读时间）
-- 🔍 实时搜索（标题 / 分类 / 标签）
-- 📂 文章分类页
-- 🌙 深色 / 浅色模式切换（自动记忆）
-- 💻 代码块语法高亮、表格、引用等
-- 📱 自适应手机 / 电脑
-
-## 📁 项目结构
-
-```
-content/posts/        ← 你的文章都放这里（.md 文件）
-src/app/              ← 页面（首页、文章、分类、关于）
-src/components/       ← 组件（文章列表、主题切换）
-src/lib/posts.ts      ← 读取和解析 Markdown 的核心逻辑
-Dockerfile            ← 群晖 NAS 部署用
-docker-compose.yml    ← 群晖一键启动用
-```
-
-## ✍️ 怎么写新文章？
-
-在 `content/posts/` 下新建一个 `.md` 文件，文件名就是网址（如 `my-post.md` → `/posts/my-post`）。开头写好信息：
-
-```markdown
----
-title: 文章标题
-date: 2026-10-16
-description: 一句话摘要，显示在首页
-category: 分类名
-tags: [标签1, 标签2]
----
-
-正文从这里开始，用 Markdown 写。
-```
-
-保存后刷新即可，新文章自动出现在首页，**不用改任何代码**。
-
-## 🖥️ 本地预览
+使用 Node.js 22.18+ 或 24：
 
 ```bash
-npm install
-npm run dev      # 开发预览，访问 http://localhost:3000
-npm run build    # 构建生产版本
-npm run start    # 启动生产版本
+npm ci --include=dev
+npm run dev
 ```
 
-## 🚀 部署方式一：Vercel（海外访问 / 备用）
-
-1. 把本项目推到 GitHub
-2. 打开 [vercel.com](https://vercel.com)，用 GitHub 登录
-3. Import 这个仓库，一路默认，点 Deploy
-4. 几分钟后得到一个网址
-
-> ⚠️ 注意：Vercel 的域名在中国大陆访问可能不稳定，适合海外访问或作为备用。
-
-## 🏠 部署方式二：群晖 NAS（Docker，大陆推荐）
-
-**前置**：群晖 DSM 7.x，已安装「Container Manager」套件。
-
-### 方法 A：用 docker compose（最简单）
-
-1. 把整个项目文件夹上传到 NAS（例如 `/volume1/docker/blog`）
-2. 在 Container Manager 里新建「项目」，指向该文件夹的 `docker-compose.yml`
-3. 启动。访问 `http://NAS内网IP:3000`
-
-### 方法 B：命令行
+打开 http://localhost:3000 。首次运行会在 `data/blog.db` 创建本地示例数据库，**不是 NAS 的线上数据**。数据库、环境变量、构建缓存不应提交到 GitHub。
 
 ```bash
-docker build -t avatar-blog .
-docker run -d -p 3000:3000 -v $(pwd)/content:/app/content --name blog avatar-blog
+npm test       # 栏目筛选与搜索逻辑
+npm run build # 生产构建，含类型检查
+npm run start # 运行生产版本
 ```
 
-### 对外访问
+## 页面
 
-- **域名备案**：大陆对外公开访问需要给域名备案
-- **内网穿透**：推荐用 Cloudflare Tunnel 或 frp，把 NAS 服务安全暴露到公网
-- **反向代理**：群晖「控制面板 → 登录门户 → 高级 → 反向代理」可绑定域名 + HTTPS
+| 路径                                | 内容                                         |
+| ----------------------------------- | -------------------------------------------- |
+| `/`                                 | 三列文章网格，右侧搜索、分类、广告和近期文章 |
+| `/videos`                           | 视频栏目                                     |
+| `/resources`                        | 免费资源栏目                                 |
+| `/member-videos`                    | 同时标记视频与 VIP 的内容                    |
+| `/posts/[slug]`                     | 文章正文、标签、相关文章和侧栏               |
+| `/categories`、`/categories/[name]` | 分类目录、分类内容                           |
+| `/search?q=关键词`                  | 站内搜索                                     |
+| `/vip`                              | 会员介绍、实际内容统计、套餐和模拟订单       |
+| `/consult`                          | 咨询草稿、复制问题、已配置的联系渠道         |
+| `/about`                            | 关于本站                                     |
+| `/admin`                            | 后台登录与内容管理                           |
 
-> 💡 `content` 目录通过挂载（volume）映射出来，所以在 NAS 上直接改 Markdown 文件就能更新文章，无需重新构建镜像。
-```
+新增主题栏目：`/tutorials`（教程）、`/notes`（随笔）、`/projects`（开源项目）。列表页在桌面显示三列文章，搜索、分类和广告集中在右侧；窄屏自动减少列数。
+
+## 如何发布到栏目
+
+在后台编辑文章的分类或标签即可，不需要更改表结构：
+
+- 视频：分类或标签为 `视频`、`视频教程`、`Youtube视频`、`video` 或 `videos`。
+- 免费资源：分类或标签为 `免费资源`、`资源`、`开源`、`resource` 或 `resources`，且未开启 VIP 标记。
+- 会员视频：满足视频条件，并开启 VIP 标记。
+- 草稿不展示在公共栏目中。栏目没有内容时显示空状态，不生成虚构文章。
+
+首页保留全部已发布文章。分类页、搜索及标签链接均指向本站内容。
+
+## 导航与联系渠道
+
+公共导航依次为首页、教程、视频、开源项目、免费资源、随笔、会员、人工咨询。会员视频移入视频页的“全部视频／免费视频／会员视频”筛选，会员页也提供会员视频入口。展示层兼容旧版 seed 菜单，不写入迁移、不覆盖已有数据库；后台自定义导航继续显示，禁用目标链接会隐藏对应入口。
+
+在后台“站点设置”填写联系邮箱或 HTTPS 咨询渠道链接，保存后咨询页显示对应联系入口。未配置时显示尚未开放提示。问题草稿仅存于当前浏览器，不会自动提交到服务器。
+
+默认使用浅色；用户主动切换主题后记住选择。
+
+## 当前能力边界
+
+- VIP 是内容标记，尚未接入面向访客的会员账户与阅读权限。
+- 会员页保留原有模拟订单流程，明确标注不扣款、不授予真实权益。
+- 在线咨询工单、注册登录、真实微信/支付宝支付和自动化 agent 属于后续阶段。
+- 本轮未改变后台认证结构及现有数据库迁移。
+
+## NAS 部署
+
+仓库的 `docker-compose.yml` 将 `./data` 绑定到 `/app/data`，`DB_PATH=/app/data/blog.db`。更新代码后需要构建镜像并更新容器，单独同步源码不会改变已运行镜像。
+
+现有环境：
+
+- 站点：https://blog.zgyun.com.cn
+- NAS 项目目录：`/volume1/docker/blog`
+- 云服务器更新入口：`122.51.139.208` 上的 `~/update-blog.sh`
+
+部署前先确认 GitHub 提交与目标镜像，并对 SQLite 做一致性备份。处于 WAL 模式时，不能把单独复制 `blog.db` 当成完整在线备份。不要覆盖或清空 NAS 的 `data` 目录。
+
+## 设计参考
+
+- https://www.freedidi.com/
+- https://vip.freedidi.com/
+- https://vip.freedidi.com/consult
+
+保留阿凡达自己的品牌、文章及套餐；不复制参考站内容、品牌和统计数字。系统字体回退以各设备实际可用字体为准。

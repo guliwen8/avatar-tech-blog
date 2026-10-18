@@ -1,19 +1,15 @@
 "use client";
-
 import { useEffect, useState } from "react";
-
-// 深色/浅色模式切换按钮，选择会保存在浏览器 localStorage 里
+import { Icon } from "./Icon";
 export function ThemeToggle() {
   const [theme, setTheme] = useState<"light" | "dark">("light");
-
   useEffect(() => {
-    const current =
-      (document.documentElement.getAttribute("data-theme") as
-        | "light"
-        | "dark") || "light";
-    setTheme(current);
+    setTheme(
+      document.documentElement.getAttribute("data-theme") === "dark"
+        ? "dark"
+        : "light",
+    );
   }, []);
-
   function toggle() {
     const next = theme === "dark" ? "light" : "dark";
     setTheme(next);
@@ -22,15 +18,15 @@ export function ThemeToggle() {
       localStorage.setItem("theme", next);
     } catch {}
   }
-
+  const label = theme === "dark" ? "切换浅色模式" : "切换深色模式";
   return (
     <button
       className="theme-toggle"
       onClick={toggle}
-      aria-label="切换深色模式"
-      title="切换深色模式"
+      aria-label={label}
+      title={label}
     >
-      {theme === "dark" ? "☀️" : "🌙"}
+      <Icon name={theme === "dark" ? "sun" : "moon"} />
     </button>
   );
 }

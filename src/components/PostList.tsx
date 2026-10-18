@@ -1,155 +1,157 @@
 "use client";
-
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import type { PostMeta } from "@/lib/posts";
-
-const GRADIENTS = [
-  "linear-gradient(135deg, #24a5db 0%, #4f6bff 100%)",
-  "linear-gradient(135deg, #f6416c 0%, #ff8c42 100%)",
-  "linear-gradient(135deg, #11998e 0%, #38ef7d 100%)",
-  "linear-gradient(135deg, #654ea3 0%, #eaafc8 100%)",
-  "linear-gradient(135deg, #ff512f 0%, #dd2476 100%)",
-  "linear-gradient(135deg, #1a2980 0%, #26d0ce 100%)",
-];
-function gradientFor(key: string): string {
-  let h = 0;
-  for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) >>> 0;
-  return GRADIENTS[h % GRADIENTS.length];
-}
-
-// 阅读量格式化（1024 -> 1k）
-function fmtViews(n: number): string {
-  if (n >= 10000) return (n / 10000).toFixed(1) + "w";
-  if (n >= 1000) return (n / 1000).toFixed(1) + "k";
-  return String(n);
-}
-
-function Card({ post }: { post: PostMeta }) {
-  return (
-    <div className="post-card">
-      <div className="masonry-inner">
-        <a
-          href={`/posts/${encodeURIComponent(post.slug)}`}
-          className="entry-thumbnail"
-          style={post.cover ? undefined : { background: gradientFor(post.category || post.title) }}
-        >
-          {post.cover ? (
-            <img src={post.cover} alt={post.title} />
-          ) : (
-            <span className="thumb-text">{post.title}</span>
-          )}
-          {post.isVip && <span className="vip-badge">👑 VIP</span>}
-        </a>
-        <h2 className="entry-title">
-          <a href={`/posts/${encodeURIComponent(post.slug)}`}>{post.title}</a>
-        </h2>
-        <div className="entry-meta">
-          <span className="cat">{post.category}</span>
-          <span className="dot">·</span>
-          <span>📅 {post.date}</span>
-          <span className="views">👁 {fmtViews(post.views)}</span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-interface AdItem {
-  id: string;
-  title: string;
-  image: string;
-  link: string;
-}
-
+import { searchPosts } from "@/lib/catalog";
+import { PostCard } from "./PostCard";
+import { BlogSidebar, type AdItem } from "./BlogSidebar";
+import { Icon } from "./Icon";
+const PAGE_SIZE = 12;
 export function PostList({
   posts,
   ads = [],
+  title = "最新文章",
+  description = "",
+  initialQuery = "",
+  allPosts = posts,
+  tabs,
 }: {
   posts: PostMeta[];
   ads?: AdItem[];
+  title?: string;
+  description?: string;
+  initialQuery?: string;
+  allPosts?: PostMeta[];
+  tabs?: ReactNode;
 }) {
-  const [query, setQuery] = useState("");
-  const [activeCat, setActiveCat] = useState("全部");
-
-  // 分类列表（含"全部"）
+  const [query, setQuery] = useState(initialQuery);
+  const [category, setCategory] = useState("全部");
+  const [page, setPage] = useState(1);
   const categories = useMemo(() => {
-    const map = new Map<string, number>();
-    for (const p of posts) map.set(p.category, (map.get(p.category) ?? 0) + 1);
-    return [["全部", posts.length] as [string, number], ...Array.from(map.entries())];
+    const m = new Map<string, number>();
+    posts.forEach((p) => m.set(p.category, (m.get(p.category) || 0) + 1));
+    return [...m.entries()];
   }, [posts]);
-
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return posts.filter((p) => {
-      const matchCat = activeCat === "全部" || p.category === activeCat;
-      const matchQ =
-        !q ||
-        p.title.toLowerCase().includes(q) ||
-        p.description.toLowerCase().includes(q) ||
-        p.category.toLowerCase().includes(q) ||
-        p.tags.some((t) => t.toLowerCase().includes(q));
-      return matchCat && matchQ;
-    });
-  }, [query, activeCat, posts]);
-
+  const filtered = useMemo(
+    () =>
+      searchPosts(posts, query).filter(
+        (p) => category === "全部" || p.category === category,
+      ),
+    [posts, query, category],
+  );
+  const pages = Math.ceil(filtered.length / PAGE_SIZE);
   return (
     <div className="list-layout">
-      {/* 左侧分类栏（零度结构）*/}
-      <aside className="cat-sidebar">
-        <div className="cat-box">
-          <h4>分类</h4>
-          <ul className="cat-nav">
-            {categories.map(([name, count]) => (
-              <li key={name}>
-                <button
-                  className={activeCat === name ? "active" : ""}
-                  onClick={() => setActiveCat(name)}
-                >
-                  <span>{name}</span>
-                  <span className="cnt">{count}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-          <input
-            className="cat-search"
-            placeholder="🔍 搜索文章…"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-        </div>
-      </aside>
-
-      {/* 中间文章网格 */}
-      <div className="list-main">
+      <section className="list-main" aria-label={title}>
         <div className="list-head">
-          <h1>{activeCat === "全部" ? "全部内容" : activeCat}</h1>
-          <p>共 {filtered.length} 篇</p>
+          <div>
+            <h1>{category === "全部" ? title : category}</h1>
+            {description && <p>{description}</p>}
+          </div>
+          <span className="result-count" aria-live="polite">
+            {filtered.length} 篇内容
+          </span>
         </div>
-        <div className="post-grid">
-          {filtered.length === 0 ? (
-            <p className="empty">没有找到匹配的文章 🤔</p>
-          ) : (
-            filtered.map((post) => <Card key={post.slug} post={post} />)
-          )}
-        </div>
-      </div>
-
-      {/* 右侧广告位 */}
-      <aside className="sidebar">
-        {ads.map((ad) =>
-          ad.image ? (
-            <a key={ad.id} href={ad.link} className="side-ad-img">
-              <img src={ad.image} alt={ad.title} />
-            </a>
-          ) : (
-            <a key={ad.id} href={ad.link} className="side-ad vip">
-              <h3>{ad.title}</h3>
-              <span className="btn">了解详情</span>
-            </a>
-          )
+        {tabs}
+        {filtered.length ? (
+          <div className="post-grid">
+            {filtered
+              .slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+              .map((p) => (
+                <PostCard key={p.slug} post={p} />
+              ))}
+          </div>
+        ) : (
+          <div className="catalog-empty">
+            <Icon name="book" size={34} />
+            <h2>
+              {posts.length ? "没有找到匹配的内容" : "这个栏目还没有内容"}
+            </h2>
+            <p>
+              {posts.length
+                ? "试试其他关键词或分类。"
+                : "新的内容发布后会显示在这里。"}
+            </p>
+            {posts.length ? (
+              <button
+                onClick={() => {
+                  setQuery("");
+                  setCategory("全部");
+                  setPage(1);
+                }}
+              >
+                清除筛选
+              </button>
+            ) : (
+              <a href="/">
+                浏览全部文章 <Icon name="arrow" size={16} />
+              </a>
+            )}
+          </div>
         )}
-      </aside>
+        {pages > 1 && (
+          <nav className="pagination" aria-label="内容分页">
+            {Array.from({ length: pages }, (_, i) => (
+              <button
+                key={i}
+                aria-current={page === i + 1 ? "page" : undefined}
+                onClick={() => {
+                  setPage(i + 1);
+                  document
+                    .querySelector(".list-head")
+                    ?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }}
+              >
+                {i + 1}
+              </button>
+            ))}
+          </nav>
+        )}
+      </section>
+      <BlogSidebar
+        posts={allPosts}
+        ads={ads}
+        filters={
+          <section className="catalog-filters" aria-label="搜索与分类">
+            <div className="cat-box">
+              <h2>分类</h2>
+              <ul className="cat-nav">
+                {[["全部", posts.length], ...categories].map(
+                  ([name, count]) => (
+                    <li key={name}>
+                      <button
+                        aria-pressed={category === name}
+                        className={category === name ? "active" : ""}
+                        onClick={() => {
+                          setCategory(String(name));
+                          setPage(1);
+                        }}
+                      >
+                        <span>{name}</span>
+                        <span className="cnt">{count}</span>
+                      </button>
+                    </li>
+                  ),
+                )}
+              </ul>
+              <label className="catalog-search">
+                <Icon name="search" size={16} />
+                <input
+                  aria-label="搜索当前栏目"
+                  placeholder="搜索文章…"
+                  value={query}
+                  onChange={(e) => {
+                    setQuery(e.target.value);
+                    setPage(1);
+                  }}
+                />
+              </label>
+              <a className="all-categories" href="/categories">
+                全部分类 <Icon name="arrow" size={14} />
+              </a>
+            </div>
+          </section>
+        }
+      />
     </div>
   );
 }
