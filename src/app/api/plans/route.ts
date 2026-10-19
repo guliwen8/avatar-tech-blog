@@ -1,3 +1,4 @@
+import { sameOrigin } from "@/server/member-session";
 import { NextRequest, NextResponse } from "next/server";
 import { listPlans, upsertPlan, deletePlan, type Plan } from "@/server/repo";
 import { requireAuth } from "@/server/guard";
@@ -13,6 +14,8 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   const guard = await requireAuth();
   if (guard) return guard;
+  const origin = sameOrigin(req);
+  if (origin) return origin;
   const p = (await req.json()) as Plan;
   if (!p.id) p.id = "plan-" + Date.now();
   upsertPlan(p);
@@ -22,6 +25,8 @@ export async function POST(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   const guard = await requireAuth();
   if (guard) return guard;
+  const origin = sameOrigin(req);
+  if (origin) return origin;
   const id = new URL(req.url).searchParams.get("id");
   if (!id) return NextResponse.json({ error: "缺少 id" }, { status: 400 });
   deletePlan(id);

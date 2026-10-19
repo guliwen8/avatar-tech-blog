@@ -419,3 +419,33 @@
     grid-template-columns: 1fr;
   }
 }
+
+.editorial-workbench { margin:28px 0; padding:22px; border:1px solid #b9e4f7; border-radius:10px; background:#f7fcff; }
+.editorial-heading { display:flex; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:20px; }
+.editorial-heading h2 { margin:0 0 8px; font-size:20px; }
+.editorial-heading p,.editorial-workbench .hint { color:#64748b; font-size:13px; line-height:1.8; }
+.editorial-heading a { color:#007fae; }
+.editorial-controls { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:20px; }
+.editorial-controls select { max-width:180px; padding:8px; }
+.editorial-columns { display:grid; grid-template-columns:1fr 1fr; gap:22px; }
+.editorial-columns > div { min-width:0; }
+.editorial-columns label { display:block; margin:12px 0 8px; font-size:14px; }
+.editorial-columns textarea,.editorial-columns input:not([type=checkbox]) { width:100%; border:1px solid #cbd5e1; border-radius:6px; padding:12px; background:white; color:#1f2937; font:inherit; }
+.editorial-columns textarea { min-height:280px; resize:vertical; line-height:1.7; }
+#editorial-sources { min-height:88px; }
+.editorial-review input { width:auto; margin-right:8px; }
+.editorial-warnings { padding:14px; border-left:3px solid #eab308; background:#fffbeb; margin:12px 0; font-size:13px; overflow-wrap:anywhere; }
+.editorial-warnings li { margin:8px 0; }
+.editorial-preview { margin-top:24px; }
+.editorial-preview iframe { width:100%; height:650px; border:1px solid #dbe4ed; border-radius:6px; background:white; }
+@media(max-width:900px){ .editorial-columns { grid-template-columns:1fr; } .editorial-workbench{padding:14px} }
+
+.video-import-form p { line-height:1.8; }
+.import-job-list { display:grid; gap:18px; }
+.import-job { border:1px solid #dbe4ed; border-radius:8px; padding:18px; min-width:0; }
+.import-job-head { display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px; }
+.import-job-head time { font-size:12px; color:#64748b; }
+.import-source-url,.import-job-error { overflow-wrap:anywhere; line-height:1.7; }
+.import-job-error { color:#9a6700; }
+.import-job textarea { width:100%; min-height:100px; display:block; margin:10px 0; padding:10px; border:1px solid #cbd5e1; border-radius:6px; }
+.video-import-form input[type=file] { max-width:100%; }

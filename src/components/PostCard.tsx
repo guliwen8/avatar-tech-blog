@@ -1,26 +1,36 @@
 "use client";
 import { useState } from "react";
 import type { PostMeta } from "@/lib/posts";
+import { safeCover } from "@/lib/reading";
+import { contentKind, selectChannel } from "@/lib/catalog";
 import { Icon } from "./Icon";
 export function PostCard({ post }: { post: PostMeta }) {
   const [failed, setFailed] = useState(false);
+  const kind = contentKind(post);
+  const cover = safeCover(post.cover);
+  const video = selectChannel([post], "videos").length > 0;
   const href = `/posts/${encodeURIComponent(post.slug)}`;
   return (
     <article className="post-card">
       <div className="masonry-inner">
         <a href={href} className="entry-thumbnail" aria-label={post.title}>
           <span className="cover-fallback">
-            <Icon name="book" size={36} />
+            <Icon name={video ? "play" : "book"} size={36} />
             <span>{post.category}</span>
           </span>
-          {post.cover && !failed && (
+          {cover && !failed && (
             <img
               className="cover-photo"
-              src={post.cover}
+              src={cover}
               alt=""
               loading="lazy"
               onError={() => setFailed(true)}
             />
+          )}
+          {video && (
+            <span className="video-badge">
+              <Icon name="play" size={16} /> 视频
+            </span>
           )}
           {post.isVip && (
             <span className="vip-badge">
@@ -35,6 +45,31 @@ export function PostCard({ post }: { post: PostMeta }) {
           >
             {post.category}
           </a>
+          {kind !== "article" && (
+            <div className="content-card-meta">
+              <span>
+                {kind === "video"
+                  ? "视频"
+                  : kind === "project"
+                    ? "开源项目"
+                    : "免费资源"}
+              </span>
+              {post.details?.duration && kind === "video" && (
+                <span>{post.details.duration}</span>
+              )}
+              {post.details?.version && kind !== "video" && (
+                <span>{post.details.version}</span>
+              )}
+              {post.details?.platform && kind === "resource" && (
+                <span>{post.details.platform}</span>
+              )}
+            </div>
+          )}
+          {post.details?.access && post.details.access !== "public" && (
+            <p className="access-label">
+              {post.details.access === "login" ? "登录可读" : "会员可读"}
+            </p>
+          )}
           <h2 className="entry-title">
             <a href={href}>{post.title}</a>
           </h2>

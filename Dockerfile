@@ -26,7 +26,10 @@ RUN npm run build
 # ===== 阶段 3：运行 =====
 FROM docker.m.daocloud.io/library/node:22-alpine AS runner
 WORKDIR /app
-RUN apk add --no-cache libc6-compat
+RUN apk add --no-cache libc6-compat python3 py3-pip ffmpeg \
+    && python3 -m venv /opt/video-tools \
+    && /opt/video-tools/bin/pip install --no-cache-dir --index-url https://pypi.tuna.tsinghua.edu.cn/simple 'yt-dlp[default]==2026.3.17'
+ENV PATH="/opt/video-tools/bin:$PATH"
 ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0

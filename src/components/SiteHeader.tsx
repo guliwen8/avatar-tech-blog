@@ -8,16 +8,19 @@ export interface NavItem {
   value: string;
 }
 export function SiteHeader({
+  readerName,
   name,
   subtitle,
   items,
 }: {
+  readerName?: string;
   name: string;
   subtitle: string;
   items: NavItem[];
 }) {
   const pathname = usePathname();
   const [menu, setMenu] = useState(false);
+  if (pathname === "/admin" || pathname.startsWith("/admin/")) return null;
   return (
     <header className="site-header">
       <div className="inner">
@@ -69,6 +72,12 @@ export function SiteHeader({
               {m.label}
             </a>
           ))}
+          <a
+            className="reader-account-link"
+            href={readerName ? "/account" : "/login"}
+          >
+            {readerName ? "我的账号" : "登录 / 注册"}
+          </a>
           <ThemeToggle />
         </nav>
       </div>

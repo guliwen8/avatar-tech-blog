@@ -5,12 +5,17 @@ import { checkAuth, login, logout } from "./store";
 
 const MENU = [
   { href: "/admin", ico: "📊", label: "仪表盘" },
+  { href: "/admin/imports", ico: "📥", label: "素材采集" },
   { href: "/admin/posts", ico: "📝", label: "文章管理" },
   { href: "/admin/categories", ico: "📂", label: "分类管理" },
   { href: "/admin/plans", ico: "💎", label: "会员套餐" },
+  { href: "/admin/members", ico: "👤", label: "读者与会员" },
+  { href: "/admin/consultations", ico: "💬", label: "咨询管理" },
   { href: "/admin/orders", ico: "🧾", label: "订单记录" },
+  { href: "/admin/files", ico: "📁", label: "文件管理" },
   { href: "/admin/ads", ico: "📢", label: "广告位" },
   { href: "/admin/modules", ico: "🧩", label: "结构模块" },
+  { href: "/admin/editorial", ico: "✍️", label: "AI 草稿配置" },
   { href: "/admin/settings", ico: "⚙️", label: "站点设置" },
 ];
 
@@ -42,6 +47,10 @@ export function AdminShell({
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
+    if (
+      new URLSearchParams(window.location.search).get("passwordChanged") === "1"
+    )
+      setErr("密码已修改，所有旧会话已退出，请重新登录");
     checkAuth()
       .then(setAuthed)
       .catch(() => setAuthed(false));
@@ -57,8 +66,8 @@ export function AdminShell({
       } else {
         setErr("用户名或密码错误，请重试");
       }
-    } catch {
-      setErr("登录失败，请稍后重试");
+    } catch (error) {
+      setErr(error instanceof Error ? error.message : "登录失败，请稍后重试");
     } finally {
       setSubmitting(false);
     }
@@ -104,9 +113,7 @@ export function AdminShell({
             </button>
             {err && <div className="login-err">{err}</div>}
             <div className="login-hint">
-              💡 默认账号 <b>admin</b> / 密码 <b>avatar2026</b>
-              <br />
-              登录后请在「站点设置」里修改成你自己的密码。
+              请使用管理员账号登录。首次部署后，请在「站点设置」中更换初始密码。
             </div>
           </form>
         </div>

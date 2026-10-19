@@ -1,15 +1,16 @@
+import { searchablePost } from "./discovery";
+import { currentMember } from "@/server/member-session";
+import { canRead, redactDetails, type AccessPolicy } from "./access";
+import type { ContentDetails } from "./content-details";
 // 前台数据源：从 SQLite 数据库读取（替代原来的 Markdown 文件）。
 // 保留 Markdown -> HTML 的渲染能力。
+import { safeCover, type TocItem, type ResourceLink } from "./reading";
 import readingTime from "reading-time";
-import { unified } from "unified";
-import remarkParse from "remark-parse";
-import remarkGfm from "remark-gfm";
-import remarkRehype from "remark-rehype";
-import rehypeHighlight from "rehype-highlight";
-import rehypeStringify from "rehype-stringify";
+import { renderArticleMarkdown } from "@/server/article-renderer";
 import { listPosts, getPost, type Post as DBPost } from "@/server/repo";
 
 export interface PostMeta {
+  details?: ContentDetails;
   slug: string;
   title: string;
   date: string; // 显示用：2026年10月16日
@@ -25,6 +26,10 @@ export interface PostMeta {
 
 export interface Post extends PostMeta {
   contentHtml: string;
+  locked: boolean;
+  access: AccessPolicy;
+  toc: TocItem[];
+  resources: ResourceLink[];
 }
 
 function formatDate(raw: string): string {
@@ -36,6 +41,7 @@ function formatDate(raw: string): string {
 
 function toMeta(p: DBPost): PostMeta {
   return {
+    details: redactDetails(p.details),
     slug: p.slug,
     title: p.title,
     date: formatDate(p.date),
@@ -43,10 +49,10 @@ function toMeta(p: DBPost): PostMeta {
     description: p.description,
     category: p.category || "未分类",
     tags: p.tags,
-    cover: p.cover || undefined,
+    cover: safeCover(p.cover),
     readingTime:
       Math.max(1, Math.round(readingTime(p.content).minutes)) + " 分钟阅读",
-    isVip: p.is_vip,
+    isVip: p.is_vip || p.details?.access === "member",
     views: p.views,
   };
 }
@@ -72,13 +78,44 @@ export async function getPostBySlug(slug: string): Promise<Post | null> {
   const p = getPost(slug);
   if (!p || !p.published) return null;
 
-  const processed = await unified()
-    .use(remarkParse)
-    .use(remarkGfm)
-    .use(remarkRehype)
-    .use(rehypeHighlight)
-    .use(rehypeStringify)
-    .process(p.content);
+  const access = p.details?.access || "public";
+  const allowed = canRead(
+    access,
+    access === "public" ? null : await currentMember(),
+  );
+  if (!allowed)
+    return {
+      ...toMeta(p),
+      locked: true,
+      access,
+      contentHtml: "",
+      toc: [],
+      resources: [],
+    };
 
-  return { ...toMeta(p), contentHtml: processed.toString() };
+  const processed = await renderArticleMarkdown(p.content);
+
+  return {
+    ...toMeta(p),
+    details: p.details,
+    locked: false,
+    access,
+    contentHtml: processed.toString(),
+    toc: processed.data.toc as TocItem[],
+    resources: processed.data.resources as ResourceLink[],
+  };
+}
+
+// Search stays on the server. Only public metadata is serialized into results.
+export async function searchPublishedPosts(query: string): Promise<PostMeta[]> {
+  const reader = await currentMember();
+  return listPosts(true)
+    .filter((post) =>
+      searchablePost(
+        post,
+        query,
+        canRead(post.details?.access || "public", reader),
+      ),
+    )
+    .map(toMeta);
 }

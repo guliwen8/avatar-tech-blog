@@ -1,9 +1,12 @@
+import { currentMember } from "@/server/member-session";
+import { ConsultationDesk } from "@/components/ConsultationDesk";
 import { getSettings } from "@/server/repo";
 import { ConsultDraft } from "@/components/ConsultDraft";
 import { Icon } from "@/components/Icon";
 export const dynamic = "force-dynamic";
 export const metadata = { title: "人工咨询 · 阿凡达博客" };
-export default function ConsultPage() {
+export default async function ConsultPage() {
+  const member = await currentMember();
   const settings = getSettings();
   const email = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(settings.contactEmail || "")
     ? settings.contactEmail
@@ -25,7 +28,20 @@ export default function ConsultPage() {
           查看会员服务 <Icon name="arrow" size={16} />
         </a>
       </div>
-      <ConsultDraft email={email} url={url} />
+      {member ? (
+        <ConsultationDesk />
+      ) : (
+        <>
+          <div className="reader-card">
+            <h2>登录后提交咨询</h2>
+            <p>提交的问题会保存到本站，可随时查看站长回复。</p>
+            <a className="primary-button" href="/login?redirect=%2Fconsult">
+              登录 / 注册
+            </a>
+          </div>
+          <ConsultDraft email={email} url={url} />
+        </>
+      )}
       <section className="consult-card consult-guide">
         <h2>
           <Icon name="book" />
@@ -45,9 +61,9 @@ export default function ConsultPage() {
             <span>保留错误信息，并列出已经尝试的方法。</span>
           </li>
         </ol>
-        {!email && !url && (
+        {!member && !email && !url && (
           <p className="consult-notice">
-            在线咨询暂未开放。你可以先保存问题草稿，或浏览已有教程。
+            登录后可以提交并查看咨询；未登录时的问题草稿只保存在当前浏览器。
           </p>
         )}
         <a href="/" className="text-link">
