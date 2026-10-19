@@ -1,3 +1,4 @@
+import type { ContentDetails } from "./content-details";
 export type Channel =
   | "all"
   | "videos"
@@ -7,6 +8,7 @@ export type Channel =
   | "notes"
   | "projects";
 interface CatalogItem {
+  details?: ContentDetails;
   title: string;
   category: string;
   tags: string[];
@@ -50,33 +52,58 @@ export const CHANNELS = {
     href: "/member-videos",
   },
 } as const;
+export function contentKind(
+  post: Pick<CatalogItem, "category" | "tags" | "details">,
+): "article" | "video" | "resource" | "project" {
+  const explicit = post.details?.kind;
+  if (explicit && explicit !== "auto") return explicit;
+  const labels = [post.category, ...post.tags].map((v) =>
+    v.trim().toLowerCase(),
+  );
+  if (
+    labels.some((v) =>
+      ["视频", "视频教程", "youtube视频", "video", "videos"].includes(v),
+    )
+  )
+    return "video";
+  if (
+    labels.some((v) =>
+      ["开源项目", "开源", "open source", "opensource"].includes(v),
+    )
+  )
+    return "project";
+  if (
+    labels.some((v) =>
+      ["免费资源", "资源", "resource", "resources"].includes(v),
+    )
+  )
+    return "resource";
+  return "article";
+}
 export function selectChannel<T extends CatalogItem>(
   posts: T[],
   channel: Channel,
 ): T[] {
   return posts.filter((p) => {
     const labels = [p.category, ...p.tags].map((v) => v.trim().toLowerCase());
-    const video = labels.some((v) =>
-      ["视频", "视频教程", "youtube视频", "video", "videos"].includes(v),
-    );
+    const kind = contentKind(p);
+    const video = kind === "video";
     if (channel === "tutorials")
       return labels.some((v) =>
         ["教程", "技术教程", "tutorial", "tutorials"].includes(v),
       );
     if (channel === "notes")
       return labels.some((v) => ["随笔", "笔记", "notes"].includes(v));
-    if (channel === "projects")
-      return labels.some((v) =>
-        ["开源项目", "开源", "open source", "opensource"].includes(v),
-      );
+    if (channel === "projects") return kind === "project";
     if (channel === "videos") return video;
     if (channel === "member-videos") return video && p.isVip;
     if (channel === "resources")
       return (
         !p.isVip &&
-        labels.some((v) =>
-          ["免费资源", "资源", "开源", "resource", "resources"].includes(v),
-        )
+        (kind === "resource" ||
+          (p.details?.kind !== "article" &&
+            (!p.details?.kind || p.details.kind === "auto") &&
+            labels.includes("开源")))
       );
     return true;
   });

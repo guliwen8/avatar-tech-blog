@@ -1,10 +1,14 @@
 "use client";
+import type { EditorialData } from "@/lib/editorial";
+import type { ContentDetails } from "@/lib/content-details";
 
 // ============================================================
 // 后台数据层 —— 现在通过后端 API 读写真实 SQLite 数据库。
 // ============================================================
 
 export interface AdminPost {
+  editorial?: EditorialData;
+  details?: ContentDetails;
   slug: string;
   title: string;
   date: string;
@@ -77,6 +81,10 @@ async function api<T>(url: string, opts?: RequestInit): Promise<T> {
     // 抛出 AuthError，由页面决定如何处理。
     throw new AuthError();
   }
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error || "保存失败，请重试");
+  }
   return res.json();
 }
 
@@ -86,13 +94,17 @@ export async function checkAuth(): Promise<boolean> {
   const d = await r.json();
   return !!d.authed;
 }
-export async function login(username: string, password: string): Promise<boolean> {
+export async function login(
+  username: string,
+  password: string,
+): Promise<boolean> {
   const r = await fetch("/api/auth", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ username, password }),
   });
   const d = await r.json();
+  if (!r.ok) throw new Error(d.error || "登录失败，请稍后重试");
   return !!d.ok;
 }
 export async function logout() {
@@ -111,7 +123,9 @@ export async function getPost(slug: string): Promise<AdminPost | undefined> {
   const posts = await getPosts();
   return posts.find((p) => p.slug === slug);
 }
-export function savePost(post: AdminPost): Promise<{ ok: boolean; slug: string }> {
+export function savePost(
+  post: AdminPost,
+): Promise<{ ok: boolean; slug: string }> {
   return api("/api/posts", { method: "POST", body: JSON.stringify(post) });
 }
 export function deletePost(slug: string) {

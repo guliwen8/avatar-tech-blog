@@ -1,3 +1,9 @@
+import { migrateLocalVideos } from "./local-video";
+import { migrateVideoJobs } from "./video-jobs";
+import { migrateEditorial } from "./editorial-migration";
+import { migrateFiles } from "./private-files";
+import { migrateCommunity } from "./community";
+import { migratePostDetails } from "./post-migration";
 import Database from "better-sqlite3";
 import bcrypt from "bcryptjs";
 import path from "path";
@@ -104,12 +110,20 @@ function init(db: Database.Database) {
   `);
 
   migrate(db);
+  migratePostDetails(db);
+  migrateEditorial(db);
+  migrateVideoJobs(db);
+  migrateLocalVideos(db);
+  migrateCommunity(db);
+  migrateFiles(db);
   seed(db);
 }
 
 // 兼容旧数据库：缺失的新列自动补上（不会丢数据）
 function migrate(db: Database.Database) {
-  const cols = db.prepare("PRAGMA table_info(posts)").all() as { name: string }[];
+  const cols = db.prepare("PRAGMA table_info(posts)").all() as {
+    name: string;
+  }[];
   const names = cols.map((c) => c.name);
   if (!names.includes("is_vip")) {
     db.exec("ALTER TABLE posts ADD COLUMN is_vip INTEGER NOT NULL DEFAULT 0");
@@ -127,7 +141,7 @@ function seed(db: Database.Database) {
   if (postCount.c === 0) {
     const ins = db.prepare(
       `INSERT INTO posts (slug,title,date,category,tags,description,cover,content,published,is_vip,views)
-       VALUES (@slug,@title,@date,@category,@tags,@description,@cover,@content,@published,@is_vip,@views)`
+       VALUES (@slug,@title,@date,@category,@tags,@description,@cover,@content,@published,@is_vip,@views)`,
     );
     const posts = [
       {
@@ -187,7 +201,7 @@ function seed(db: Database.Database) {
   if (planCount.c === 0) {
     const ins = db.prepare(
       `INSERT INTO plans (id,name,price,period,features,highlight,enabled,sort)
-       VALUES (@id,@name,@price,@period,@features,@highlight,@enabled,@sort)`
+       VALUES (@id,@name,@price,@period,@features,@highlight,@enabled,@sort)`,
     );
     const plans = [
       {
@@ -195,7 +209,11 @@ function seed(db: Database.Database) {
         name: "月度会员",
         price: 29,
         period: "/月",
-        features: JSON.stringify(["全部付费文章", "实战视频教程", "会员专属下载"]),
+        features: JSON.stringify([
+          "全部付费文章",
+          "实战视频教程",
+          "会员专属下载",
+        ]),
         highlight: 0,
         enabled: 1,
         sort: 1,
@@ -240,7 +258,7 @@ function seed(db: Database.Database) {
   if (adCount.c === 0) {
     const ins = db.prepare(
       `INSERT INTO ads (id,title,image,link,position,enabled,sort)
-       VALUES (@id,@title,@image,@link,@position,@enabled,@sort)`
+       VALUES (@id,@title,@image,@link,@position,@enabled,@sort)`,
     );
     const ads = [
       {
@@ -273,14 +291,49 @@ function seed(db: Database.Database) {
   if (modCount.c === 0) {
     const ins = db.prepare(
       `INSERT INTO modules (id,type,label,value,enabled,sort)
-       VALUES (@id,@type,@label,@value,@enabled,@sort)`
+       VALUES (@id,@type,@label,@value,@enabled,@sort)`,
     );
     const mods = [
-      { id: "nav-1", type: "nav", label: "首页", value: "/", enabled: 1, sort: 1 },
-      { id: "nav-2", type: "nav", label: "分类", value: "/categories", enabled: 1, sort: 2 },
-      { id: "nav-3", type: "nav", label: "教程", value: "/categories", enabled: 1, sort: 3 },
-      { id: "nav-4", type: "nav", label: "会员", value: "/vip", enabled: 1, sort: 4 },
-      { id: "nav-5", type: "nav", label: "关于", value: "/about", enabled: 1, sort: 5 },
+      {
+        id: "nav-1",
+        type: "nav",
+        label: "首页",
+        value: "/",
+        enabled: 1,
+        sort: 1,
+      },
+      {
+        id: "nav-2",
+        type: "nav",
+        label: "分类",
+        value: "/categories",
+        enabled: 1,
+        sort: 2,
+      },
+      {
+        id: "nav-3",
+        type: "nav",
+        label: "教程",
+        value: "/categories",
+        enabled: 1,
+        sort: 3,
+      },
+      {
+        id: "nav-4",
+        type: "nav",
+        label: "会员",
+        value: "/vip",
+        enabled: 1,
+        sort: 4,
+      },
+      {
+        id: "nav-5",
+        type: "nav",
+        label: "关于",
+        value: "/about",
+        enabled: 1,
+        sort: 5,
+      },
     ];
     db.transaction(() => mods.forEach((m) => ins.run(m)))();
   }
@@ -294,13 +347,13 @@ function seed(db: Database.Database) {
     db.prepare("INSERT INTO users (username,password,role) VALUES (?,?,?)").run(
       "admin",
       hash,
-      "admin"
+      "admin",
     );
   }
 
   // 默认站点设置
   const setDefault = db.prepare(
-    "INSERT OR IGNORE INTO settings (key,value) VALUES (?,?)"
+    "INSERT OR IGNORE INTO settings (key,value) VALUES (?,?)",
   );
   setDefault.run("siteName", "阿凡达博客");
   setDefault.run("siteSub", "技术折腾笔记");

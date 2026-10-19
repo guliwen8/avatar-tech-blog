@@ -1,5 +1,19 @@
+import { normalizeEditorial, type EditorialData } from "@/lib/editorial";
+import { sameOrigin } from "@/server/member-session";
+import { getDB } from "@/server/db";
+import { bindPostFiles, FileError } from "@/server/private-files";
+import {
+  validateDetailsForPublication,
+  type ContentDetails,
+} from "@/lib/content-details";
 import { NextRequest, NextResponse } from "next/server";
-import { listPosts, upsertPost, deletePost, type Post } from "@/server/repo";
+import {
+  getPost,
+  listPosts,
+  upsertPost,
+  deletePost,
+  type Post,
+} from "@/server/repo";
 import { requireAuth, toSlug } from "@/server/guard";
 
 export const dynamic = "force-dynamic";
@@ -8,7 +22,9 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   const guard = await requireAuth();
   if (guard) return guard;
-  return NextResponse.json(listPosts(false));
+  return NextResponse.json(listPosts(false), {
+    headers: { "Cache-Control": "private, no-store" },
+  });
 }
 
 // 新增 / 更新文章
@@ -16,11 +32,35 @@ export async function POST(req: NextRequest) {
   const guard = await requireAuth();
   if (guard) return guard;
 
+  const origin = sameOrigin(req);
+  if (origin) return origin;
   const body = (await req.json()) as Partial<Post>;
   if (!body.title?.trim()) {
     return NextResponse.json({ error: "标题不能为空" }, { status: 400 });
   }
+  let details: ContentDetails;
+  let editorial: EditorialData;
+  try {
+    editorial = normalizeEditorial(
+      body.editorial === undefined && body.slug
+        ? getPost(body.slug)?.editorial
+        : body.editorial,
+    );
+    details = validateDetailsForPublication(
+      body.details === undefined && body.slug
+        ? getPost(body.slug)?.details
+        : body.details,
+      body.published ?? true,
+    );
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "内容资料无效" },
+      { status: 400 },
+    );
+  }
   const post: Post = {
+    editorial,
+    details,
     slug: body.slug || toSlug(body.title),
     title: body.title,
     date: body.date || new Date().toISOString().slice(0, 10),
@@ -33,7 +73,19 @@ export async function POST(req: NextRequest) {
     is_vip: body.is_vip ?? false,
     views: body.views ?? 0,
   };
-  upsertPost(post);
+  try {
+    getDB().transaction(() => {
+      bindPostFiles(getDB(), post.slug, post.details);
+      upsertPost(post);
+    })();
+  } catch (error) {
+    return NextResponse.json(
+      {
+        error: error instanceof FileError ? error.message : "保存失败，请重试",
+      },
+      { status: error instanceof FileError ? error.status : 500 },
+    );
+  }
   return NextResponse.json({ ok: true, slug: post.slug });
 }
 
@@ -41,6 +93,8 @@ export async function POST(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   const guard = await requireAuth();
   if (guard) return guard;
+  const origin = sameOrigin(req);
+  if (origin) return origin;
   const slug = new URL(req.url).searchParams.get("slug");
   if (!slug) return NextResponse.json({ error: "缺少 slug" }, { status: 400 });
   deletePost(slug);

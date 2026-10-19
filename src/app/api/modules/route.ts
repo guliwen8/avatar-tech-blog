@@ -1,3 +1,4 @@
+import { sameOrigin } from "@/server/member-session";
 import { NextRequest, NextResponse } from "next/server";
 import {
   listModules,
@@ -18,6 +19,8 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   const guard = await requireAuth();
   if (guard) return guard;
+  const origin = sameOrigin(req);
+  if (origin) return origin;
   const m = (await req.json()) as SiteModule;
   if (!m.id) m.id = "mod-" + Date.now();
   upsertModule(m);
@@ -27,6 +30,8 @@ export async function POST(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   const guard = await requireAuth();
   if (guard) return guard;
+  const origin = sameOrigin(req);
+  if (origin) return origin;
   const id = new URL(req.url).searchParams.get("id");
   if (!id) return NextResponse.json({ error: "缺少 id" }, { status: 400 });
   deleteModule(id);

@@ -1,10 +1,10 @@
 "use client";
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import type { PostMeta } from "@/lib/posts";
-import { searchPosts } from "@/lib/catalog";
 import { PostCard } from "./PostCard";
 import { BlogSidebar, type AdItem } from "./BlogSidebar";
 import { Icon } from "./Icon";
+import { readListState, listStateUrl } from "@/lib/discovery";
 const PAGE_SIZE = 12;
 export function PostList({
   posts,
@@ -14,6 +14,7 @@ export function PostList({
   initialQuery = "",
   allPosts = posts,
   tabs,
+  serverSearch = false,
 }: {
   posts: PostMeta[];
   ads?: AdItem[];
@@ -22,29 +23,41 @@ export function PostList({
   initialQuery?: string;
   allPosts?: PostMeta[];
   tabs?: ReactNode;
+  serverSearch?: boolean;
 }) {
   const [query, setQuery] = useState(initialQuery);
-  const [category, setCategory] = useState("全部");
   const [page, setPage] = useState(1);
-  const categories = useMemo(() => {
-    const m = new Map<string, number>();
-    posts.forEach((p) => m.set(p.category, (m.get(p.category) || 0) + 1));
-    return [...m.entries()];
-  }, [posts]);
-  const filtered = useMemo(
-    () =>
-      searchPosts(posts, query).filter(
-        (p) => category === "全部" || p.category === category,
-      ),
-    [posts, query, category],
-  );
+  useEffect(() => {
+    function restore() {
+      const state = readListState(new URLSearchParams(window.location.search));
+      setQuery(serverSearch ? initialQuery : state.query);
+      setPage(state.page);
+    }
+    restore();
+    window.addEventListener("popstate", restore);
+    return () => window.removeEventListener("popstate", restore);
+  }, [initialQuery, serverSearch, posts]);
+  function update(page: number) {
+    setPage(page);
+    window.history.pushState(
+      null,
+      "",
+      listStateUrl(window.location.href, {
+        query: serverSearch ? initialQuery : "",
+        category: "全部",
+        page,
+      }),
+    );
+  }
+  const filtered = posts;
   const pages = Math.ceil(filtered.length / PAGE_SIZE);
+  const currentPage = Math.min(page, Math.max(1, pages));
   return (
     <div className="list-layout">
       <section className="list-main" aria-label={title}>
         <div className="list-head">
           <div>
-            <h1>{category === "全部" ? title : category}</h1>
+            <h1>{title}</h1>
             {description && <p>{description}</p>}
           </div>
           <span className="result-count" aria-live="polite">
@@ -55,7 +68,7 @@ export function PostList({
         {filtered.length ? (
           <div className="post-grid">
             {filtered
-              .slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+              .slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
               .map((p) => (
                 <PostCard key={p.slug} post={p} />
               ))}
@@ -64,19 +77,20 @@ export function PostList({
           <div className="catalog-empty">
             <Icon name="book" size={34} />
             <h2>
-              {posts.length ? "没有找到匹配的内容" : "这个栏目还没有内容"}
+              {posts.length || serverSearch
+                ? "没有找到匹配的内容"
+                : "这个栏目还没有内容"}
             </h2>
             <p>
-              {posts.length
-                ? "试试其他关键词或分类。"
+              {posts.length || serverSearch
+                ? "试试其他关键词。"
                 : "新的内容发布后会显示在这里。"}
             </p>
-            {posts.length ? (
+            {posts.length || serverSearch ? (
               <button
                 onClick={() => {
-                  setQuery("");
-                  setCategory("全部");
-                  setPage(1);
+                  if (serverSearch) window.location.assign("/search");
+                  else update(1);
                 }}
               >
                 清除筛选
@@ -88,14 +102,24 @@ export function PostList({
             )}
           </div>
         )}
+        {!filtered.length && allPosts.length > 0 && (
+          <section className="empty-recommendations" aria-label="近期内容推荐">
+            <h2>先看看这些文章</h2>
+            <div className="post-grid">
+              {allPosts.slice(0, 3).map((post) => (
+                <PostCard key={post.slug} post={post} />
+              ))}
+            </div>
+          </section>
+        )}
         {pages > 1 && (
           <nav className="pagination" aria-label="内容分页">
             {Array.from({ length: pages }, (_, i) => (
               <button
                 key={i}
-                aria-current={page === i + 1 ? "page" : undefined}
+                aria-current={currentPage === i + 1 ? "page" : undefined}
                 onClick={() => {
-                  setPage(i + 1);
+                  update(i + 1);
                   document
                     .querySelector(".list-head")
                     ?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -108,46 +132,31 @@ export function PostList({
         )}
       </section>
       <BlogSidebar
+        compact={!filtered.length}
         posts={allPosts}
         ads={ads}
         filters={
-          <section className="catalog-filters" aria-label="搜索与分类">
+          <section className="catalog-filters" aria-label="全站文章搜索">
             <div className="cat-box">
-              <h2>分类</h2>
-              <ul className="cat-nav">
-                {[["全部", posts.length], ...categories].map(
-                  ([name, count]) => (
-                    <li key={name}>
-                      <button
-                        aria-pressed={category === name}
-                        className={category === name ? "active" : ""}
-                        onClick={() => {
-                          setCategory(String(name));
-                          setPage(1);
-                        }}
-                      >
-                        <span>{name}</span>
-                        <span className="cnt">{count}</span>
-                      </button>
-                    </li>
-                  ),
-                )}
-              </ul>
-              <label className="catalog-search">
-                <Icon name="search" size={16} />
-                <input
-                  aria-label="搜索当前栏目"
-                  placeholder="搜索文章…"
-                  value={query}
-                  onChange={(e) => {
-                    setQuery(e.target.value);
-                    setPage(1);
-                  }}
-                />
-              </label>
-              <a className="all-categories" href="/categories">
-                全部分类 <Icon name="arrow" size={14} />
-              </a>
+              <form action="/search" role="search">
+                <div className="catalog-search">
+                  <button
+                    type="submit"
+                    className="catalog-search-submit"
+                    aria-label="提交全站搜索"
+                  >
+                    <Icon name="search" size={16} />
+                  </button>
+                  <input
+                    name="q"
+                    maxLength={200}
+                    aria-label="搜索全部文章"
+                    placeholder="搜索文章…"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                  />
+                </div>
+              </form>
             </div>
           </section>
         }

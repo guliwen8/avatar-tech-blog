@@ -43,13 +43,17 @@ function SettingsInner() {
   }
 
   async function savePwd() {
-    if (newPwd.length < 6) {
-      alert("密码至少 6 位");
+    if (newPwd.length < 10) {
+      alert("密码至少 10 位");
       return;
     }
-    await saveSettings({ newPassword: newPwd });
-    setNewPwd("");
-    show("密码已修改");
+    try {
+      await saveSettings({ newPassword: newPwd });
+      setNewPwd("");
+      window.location.assign("/admin?passwordChanged=1");
+    } catch (error) {
+      show(error instanceof Error ? error.message : "修改失败");
+    }
   }
 
   return (
@@ -124,8 +128,10 @@ function SettingsInner() {
           <h3>🔐 修改登录密码</h3>
         </div>
         <div className="form-row">
-          <label>新密码（至少 6 位）</label>
+          <label htmlFor="admin-new-password">新密码（至少 10 位）</label>
           <input
+            id="admin-new-password"
+            autoComplete="new-password"
             type="password"
             value={newPwd}
             onChange={(e) => setNewPwd(e.target.value)}

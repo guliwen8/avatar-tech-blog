@@ -1,7 +1,11 @@
+import { normalizeEditorial, type EditorialData } from "../lib/editorial";
+import { normalizeDetails, type ContentDetails } from "../lib/content-details";
 import { getDB } from "./db";
 
 // ===== 类型 =====
 export interface Post {
+  editorial?: EditorialData;
+  details?: ContentDetails;
   slug: string;
   title: string;
   date: string;
@@ -56,8 +60,16 @@ export interface Order {
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 // ===== 文章 =====
+function readDetails(raw: string | undefined): ContentDetails {
+  try {
+    return normalizeDetails(JSON.parse(raw || "{}"));
+  } catch {
+    return { kind: "auto", access: "member" };
+  }
+}
 function rowToPost(r: any): Post {
   return {
+    editorial: normalizeEditorial(JSON.parse(r.editorial || "{}")),
     slug: r.slug,
     title: r.title,
     date: r.date,
@@ -69,6 +81,7 @@ function rowToPost(r: any): Post {
     published: !!r.published,
     is_vip: !!r.is_vip,
     views: r.views || 0,
+    details: readDetails(r.details),
   };
 }
 export function listPosts(onlyPublished = false): Post[] {
@@ -84,15 +97,17 @@ export function getPost(slug: string): Post | null {
 export function upsertPost(p: Post) {
   getDB()
     .prepare(
-      `INSERT INTO posts (slug,title,date,category,tags,description,cover,content,published,is_vip,views)
-       VALUES (@slug,@title,@date,@category,@tags,@description,@cover,@content,@published,@is_vip,@views)
+      `INSERT INTO posts (slug,title,date,category,tags,description,cover,content,published,is_vip,views,details,editorial)
+       VALUES (@slug,@title,@date,@category,@tags,@description,@cover,@content,@published,@is_vip,@views,@details,@editorial)
        ON CONFLICT(slug) DO UPDATE SET
          title=@title, date=@date, category=@category, tags=@tags,
          description=@description, cover=@cover, content=@content,
-         published=@published, is_vip=@is_vip`
+         published=@published, is_vip=@is_vip, details=@details, editorial=@editorial`,
     )
     .run({
       ...p,
+      editorial: JSON.stringify(normalizeEditorial(p.editorial)),
+      details: JSON.stringify(normalizeDetails(p.details)),
       tags: JSON.stringify(p.tags),
       published: p.published ? 1 : 0,
       is_vip: p.is_vip ? 1 : 0,
@@ -104,7 +119,9 @@ export function deletePost(slug: string) {
 }
 // 文章浏览量 +1
 export function incrementViews(slug: string) {
-  getDB().prepare("UPDATE posts SET views = views + 1 WHERE slug = ?").run(slug);
+  getDB()
+    .prepare("UPDATE posts SET views = views + 1 WHERE slug = ?")
+    .run(slug);
 }
 
 // ===== 套餐 =====
@@ -137,7 +154,7 @@ export function upsertPlan(p: Plan) {
        VALUES (@id,@name,@price,@period,@features,@highlight,@enabled,@sort)
        ON CONFLICT(id) DO UPDATE SET
          name=@name, price=@price, period=@period, features=@features,
-         highlight=@highlight, enabled=@enabled, sort=@sort`
+         highlight=@highlight, enabled=@enabled, sort=@sort`,
     )
     .run({
       ...p,
@@ -167,7 +184,7 @@ export function upsertAd(a: Ad) {
        VALUES (@id,@title,@image,@link,@position,@enabled,@sort)
        ON CONFLICT(id) DO UPDATE SET
          title=@title, image=@image, link=@link, position=@position,
-         enabled=@enabled, sort=@sort`
+         enabled=@enabled, sort=@sort`,
     )
     .run({ ...a, enabled: a.enabled ? 1 : 0 });
 }
@@ -184,7 +201,9 @@ export function listModules(type?: string): SiteModule[] {
     ? "SELECT * FROM modules WHERE type = ? ORDER BY sort"
     : "SELECT * FROM modules ORDER BY sort";
   const stmt = getDB().prepare(sql);
-  return (type ? stmt.all(type) : stmt.all()).map(rowToMod as any) as SiteModule[];
+  return (type ? stmt.all(type) : stmt.all()).map(
+    rowToMod as any,
+  ) as SiteModule[];
 }
 export function upsertModule(m: SiteModule) {
   getDB()
@@ -192,7 +211,7 @@ export function upsertModule(m: SiteModule) {
       `INSERT INTO modules (id,type,label,value,enabled,sort)
        VALUES (@id,@type,@label,@value,@enabled,@sort)
        ON CONFLICT(id) DO UPDATE SET
-         type=@type, label=@label, value=@value, enabled=@enabled, sort=@sort`
+         type=@type, label=@label, value=@value, enabled=@enabled, sort=@sort`,
     )
     .run({ ...m, enabled: m.enabled ? 1 : 0 });
 }
@@ -210,7 +229,7 @@ export function getSettings(): Record<string, string> {
 export function setSetting(key: string, value: string) {
   getDB()
     .prepare(
-      "INSERT INTO settings (key,value) VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=?"
+      "INSERT INTO settings (key,value) VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=?",
     )
     .run(key, value, value);
 }
@@ -223,14 +242,14 @@ export function createOrder(o: Omit<Order, "created_at" | "paid_at">) {
   getDB()
     .prepare(
       `INSERT INTO orders (id,plan_id,plan_name,amount,method,status,contact)
-       VALUES (@id,@plan_id,@plan_name,@amount,@method,@status,@contact)`
+       VALUES (@id,@plan_id,@plan_name,@amount,@method,@status,@contact)`,
     )
     .run(o);
 }
 export function markOrderPaid(id: string) {
   getDB()
     .prepare(
-      "UPDATE orders SET status='paid', paid_at=datetime('now') WHERE id = ?"
+      "UPDATE orders SET status='paid', paid_at=datetime('now') WHERE id = ?",
     )
     .run(id);
 }
@@ -240,6 +259,8 @@ export function getOrder(id: string): Order | null {
 }
 export function listOrders(): Order[] {
   return (
-    getDB().prepare("SELECT * FROM orders ORDER BY created_at DESC").all() as any[]
+    getDB()
+      .prepare("SELECT * FROM orders ORDER BY created_at DESC")
+      .all() as any[]
   ).map(rowToOrder);
 }

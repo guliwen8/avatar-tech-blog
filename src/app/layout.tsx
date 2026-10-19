@@ -1,3 +1,4 @@
+import { currentMember } from "@/server/member-session";
 import type { Metadata } from "next";
 import "./globals.css";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -12,12 +13,13 @@ export const metadata: Metadata = {
   description: "分享技术教程、折腾笔记与踩坑经验",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   // 从数据库读取导航菜单和站点信息
+  const reader = await currentMember();
   const navItems = listModules("nav");
   const settings = getSettings();
   const siteName = settings.siteName || "阿凡达博客";
@@ -38,6 +40,7 @@ export default function RootLayout({
           跳到正文
         </a>
         <SiteHeader
+          readerName={reader?.username}
           name={siteName}
           subtitle={siteSub}
           items={publicNavigation(navItems)}
@@ -53,6 +56,8 @@ export default function RootLayout({
               <a href="/categories">全部分类</a>
               <a href="/about">关于本站</a>
               <a href="/consult">联系与咨询</a>
+              <a href="/terms">服务说明</a>
+              <a href="/privacy">隐私说明</a>
             </nav>
             <small>
               © {new Date().getFullYear()} {siteName} · Powered by Next.js

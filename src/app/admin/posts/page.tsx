@@ -7,11 +7,14 @@ import { useToast } from "../useToast";
 
 function PostsInner() {
   const ready = useAdminReady();
+  const [filter, setFilter] = useState("all");
   const [posts, setPosts] = useState<AdminPost[]>([]);
   const { show, node } = useToast();
 
   function refresh() {
-    getPosts().then(setPosts).catch(() => {});
+    getPosts()
+      .then(setPosts)
+      .catch(() => {});
   }
   useEffect(() => {
     if (ready) refresh();
@@ -35,6 +38,29 @@ function PostsInner() {
             ✏️ 写新文章
           </a>
         </div>
+        <div className="form-actions">
+          <button
+            className="btn btn-ghost"
+            onClick={() => setFilter("all")}
+            aria-pressed={filter === "all"}
+          >
+            全部
+          </button>
+          <button
+            className="btn btn-ghost"
+            onClick={() => setFilter("draft")}
+            aria-pressed={filter === "draft"}
+          >
+            待审核草稿（{posts.filter((p) => !p.published).length}）
+          </button>
+          <button
+            className="btn btn-ghost"
+            onClick={() => setFilter("published")}
+            aria-pressed={filter === "published"}
+          >
+            已发布
+          </button>
+        </div>
         <table className="table">
           <thead>
             <tr>
@@ -53,32 +79,38 @@ function PostsInner() {
                 </td>
               </tr>
             ) : (
-              posts.map((p) => (
-                <tr key={p.slug}>
-                  <td>{p.title}</td>
-                  <td>
-                    <span className="tag">{p.category}</span>
-                  </td>
-                  <td>{p.date}</td>
-                  <td>{p.published ? "✅ 已发布" : "📝 草稿"}</td>
-                  <td>
-                    <div className="actions">
-                      <a
-                        href={`/admin/posts/edit?slug=${p.slug}`}
-                        className="btn btn-ghost btn-sm"
-                      >
-                        编辑
-                      </a>
-                      <button
-                        className="btn btn-danger btn-sm"
-                        onClick={() => onDelete(p.slug, p.title)}
-                      >
-                        删除
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
+              posts
+                .filter(
+                  (p) =>
+                    filter === "all" ||
+                    (filter === "draft" ? !p.published : p.published),
+                )
+                .map((p) => (
+                  <tr key={p.slug}>
+                    <td>{p.title}</td>
+                    <td>
+                      <span className="tag">{p.category}</span>
+                    </td>
+                    <td>{p.date}</td>
+                    <td>{p.published ? "✅ 已发布" : "📝 草稿"}</td>
+                    <td>
+                      <div className="actions">
+                        <a
+                          href={`/admin/posts/edit?slug=${p.slug}`}
+                          className="btn btn-ghost btn-sm"
+                        >
+                          编辑
+                        </a>
+                        <button
+                          className="btn btn-danger btn-sm"
+                          onClick={() => onDelete(p.slug, p.title)}
+                        >
+                          删除
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
             )}
           </tbody>
         </table>

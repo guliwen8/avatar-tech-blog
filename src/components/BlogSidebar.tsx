@@ -12,26 +12,33 @@ export function BlogSidebar({
   posts,
   ads = [],
   filters,
+  compact = false,
 }: {
   posts: PostMeta[];
   ads?: AdItem[];
   filters?: ReactNode;
+  compact?: boolean;
 }) {
   const tags = Array.from(new Set(posts.flatMap((p) => p.tags))).slice(0, 16);
   return (
     <aside className="sidebar" aria-label="搜索、分类与推荐内容">
       {filters}
-      <a href="/vip" className="member-promo">
-        <Icon name="crown" size={27} />
-        <h3>阿凡达会员服务</h3>
-        <p>深度内容 · 实战教程 · 人工咨询</p>
-        <span>
-          了解会员方案 <Icon name="arrow" size={16} />
-        </span>
-      </a>
-      {ads.map((ad) => (
-        <SidebarAd key={ad.id} ad={ad} />
-      ))}
+      <nav className="side-box discovery-nav" aria-label="内容索引">
+        <a href="/categories">全部分类</a>
+        <a href="/tags">全部标签</a>
+        <a href="/archives">文章归档</a>
+      </nav>
+      {!compact && (
+        <a href="/vip" className="member-promo">
+          <Icon name="crown" size={27} />
+          <h3>阿凡达会员服务</h3>
+          <p>深度内容 · 实战教程 · 人工咨询</p>
+          <span>
+            了解会员方案 <Icon name="arrow" size={16} />
+          </span>
+        </a>
+      )}
+      {!compact && ads.map((ad) => <SidebarAd key={ad.id} ad={ad} />)}
       <section className="side-box">
         <h3>近期文章</h3>
         <ol className="recent-posts">
@@ -48,12 +55,12 @@ export function BlogSidebar({
           ))}
         </ol>
       </section>
-      {tags.length > 0 && (
+      {!compact && tags.length > 0 && (
         <section className="side-box">
           <h3>标签</h3>
           <div className="tag-cloud">
             {tags.map((t) => (
-              <a key={t} href={`/search?q=${encodeURIComponent(t)}`}>
+              <a key={t} href={`/tags/${encodeURIComponent(t)}`}>
                 {t}
               </a>
             ))}
