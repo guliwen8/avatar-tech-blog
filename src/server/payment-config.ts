@@ -59,13 +59,29 @@ export function savePaymentConfig(
     if (typeof v !== "string" || !v.trim()) return "";
     return fileIdFromUrl(v.trim()) || (v.trim().length === 36 ? v.trim() : "");
   };
-  const wechat = idOf(r.wechatQr ?? r.wechatFileId);
-  const alipay = idOf(r.alipayQr ?? r.alipayFileId);
-  const enabled = r.enabled === true;
+  // 只有请求里出现的字段才更新——没传的保持原值。
+  // 否则「只上传支付宝」会清空微信，「只点开启」会把两个码都清空。
+  const pick = (keys: readonly string[]) => {
+    for (const k of keys)
+      if (Object.prototype.hasOwnProperty.call(r, k))
+        return { present: true, value: r[k] };
+    return { present: false, value: undefined as unknown };
+  };
+  const current = getPaymentConfig(db);
+  const w = pick(["wechatQr", "wechatFileId"]);
+  const a = pick(["alipayQr", "alipayFileId"]);
+
+  const wechat = w.present ? idOf(w.value) : current.wechatFileId;
+  const alipay = a.present ? idOf(a.value) : current.alipayFileId;
+  const enabled = Object.prototype.hasOwnProperty.call(r, "enabled")
+    ? r.enabled === true
+    : current.enabled;
   if (enabled && !wechat && !alipay)
     throw new Error("启用收款前请至少上传一张收款码");
 
-  const notice = String(r.notice ?? DEFAULT_PAY_NOTICE).trim().slice(0, 300);
+  const notice = Object.prototype.hasOwnProperty.call(r, "notice")
+    ? String(r.notice ?? "").trim().slice(0, 300) || DEFAULT_PAY_NOTICE
+    : current.notice;
 
   setSetting(KEYS.wechat, wechat);
   setSetting(KEYS.alipay, alipay);
