@@ -14,9 +14,23 @@ import {
   deletePost,
   type Post,
 } from "@/server/repo";
-import { requireAuth, toSlug } from "@/server/guard";
+import { requireAuth } from "@/server/guard";
 import { ensurePostCover } from "@/server/cover-job";
 import { gateMessage, qualityGate } from "@/lib/quality-gate";
+import { slugify } from "@/lib/slug";
+
+/** 用拼音生成可读 slug；同名的自动加 -2、-3。 */
+function uniqueSlug(
+  db: ReturnType<typeof getDB>,
+  base: string,
+): string {
+  const root = base || "post-" + Date.now();
+  let slug = root;
+  let n = 2;
+  while (db.prepare("SELECT 1 FROM posts WHERE slug=?").get(slug))
+    slug = `${root}-${n++}`;
+  return slug;
+}
 
 export const dynamic = "force-dynamic";
 
@@ -63,7 +77,7 @@ export async function POST(req: NextRequest) {
   const post: Post = {
     editorial,
     details,
-    slug: body.slug || toSlug(body.title),
+    slug: body.slug || uniqueSlug(getDB(), slugify(body.title)),
     title: body.title,
     date: body.date || new Date().toISOString().slice(0, 10),
     category: body.category || "未分类",

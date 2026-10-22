@@ -4,6 +4,7 @@ import { EditorialWorkbench } from "@/components/EditorialWorkbench";
 import type { EditorialCandidate } from "@/lib/editorial";
 import { ContentFields } from "@/components/ContentFields";
 import { CoverField } from "@/components/CoverField";
+import { slugify } from "@/lib/slug";
 import { validateDetailsForPublication } from "@/lib/content-details";
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
@@ -65,12 +66,18 @@ function EditForm() {
   const [imageBusy, setImageBusy] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
+  // 用户是否手动改过 slug。没改过就跟着标题自动更新。
+  const [slugTouched, setSlugTouched] = useState(false);
 
   useEffect(() => {
     if (ready && editSlug) {
       getPost(editSlug)
         .then((p) => {
-          if (p) setForm(p);
+          if (p) {
+            setForm(p);
+            // 已有文章保留它原来的 slug，不覆盖
+            setSlugTouched(true);
+          }
         })
         .catch(() => {});
     }
@@ -140,7 +147,15 @@ function EditForm() {
           <label>文章标题</label>
           <input
             value={form.title}
-            onChange={(e) => set("title", e.target.value)}
+            onChange={(e) => {
+              const v = e.target.value;
+              // 没手动改过 slug 时，跟着标题自动生成拼音地址
+              setForm((f) => ({
+                ...f,
+                title: v,
+                slug: slugTouched ? f.slug : slugify(v),
+              }));
+            }}
             placeholder="输入文章标题"
           />
         </div>
@@ -150,13 +165,19 @@ function EditForm() {
           <div className="cover-input-row">
             <input
               value={form.slug}
-              onChange={(e) => set("slug", e.target.value.trim())}
-              placeholder="如：how-to-choose-ai-pc"
+              onChange={(e) => {
+                setSlugTouched(true);
+                set("slug", e.target.value.trim());
+              }}
+              placeholder="留空会自动按标题生成"
             />
             <button
               type="button"
               className="btn btn-ghost"
-              onClick={() => set("slug", toSlug(form.title))}
+              onClick={() => {
+                setSlugTouched(true);
+                set("slug", slugify(form.title));
+              }}
             >
               从标题生成
             </button>
