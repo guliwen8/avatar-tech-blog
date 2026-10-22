@@ -531,3 +531,7 @@
   aspect-ratio: 16 / 9; object-fit: cover;
   border: 1px solid #e3e8ee; border-radius: 8px; background: #f7fafc;
 }
+
+/* ===== 字段实时提示 ===== */
+.field-hint { margin: 6px 0 0; font-size: 13px; color: #6b7c8c; }
+.field-hint-error { color: #c0392b; }

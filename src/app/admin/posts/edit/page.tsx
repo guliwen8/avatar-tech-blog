@@ -21,6 +21,21 @@ function toSlug(s: string): string {
   return cleaned || "post-" + Date.now();
 }
 
+const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const UUID_RE =
+  /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+
+/** 与发布闸门保持同一套规则，做到边打字边提示。 */
+function slugProblem(slug: string): string {
+  if (!slug) return "";
+  if (slug.length < 3) return "至少 3 个字符";
+  if (slug.length > 80) return "最多 80 个字符";
+  if (!SLUG_RE.test(slug)) return "只能用小写字母、数字和单个连字符";
+  if (UUID_RE.test(slug)) return "不能是 UUID，请改成可读的英文短句";
+  if (/%[0-9a-f]{2}/i.test(slug)) return "不能包含中文编码";
+  return "";
+}
+
 function EditForm() {
   const ready = useAdminReady();
   const params = useSearchParams();
@@ -130,6 +145,35 @@ function EditForm() {
           />
         </div>
 
+        <div className="form-row">
+          <label>URL（slug）</label>
+          <div className="cover-input-row">
+            <input
+              value={form.slug}
+              onChange={(e) => set("slug", e.target.value.trim())}
+              placeholder="如：how-to-choose-ai-pc"
+            />
+            <button
+              type="button"
+              className="btn btn-ghost"
+              onClick={() => set("slug", toSlug(form.title))}
+            >
+              从标题生成
+            </button>
+          </div>
+          {slugProblem(form.slug) ? (
+            <p className="field-hint field-hint-error">
+              URL {slugProblem(form.slug)}，否则无法发布
+            </p>
+          ) : (
+            <p className="field-hint">
+              {form.slug
+                ? `/posts/${form.slug}`
+                : "留空会在保存时按标题自动生成"}
+            </p>
+          )}
+        </div>
+
         <div className="form-grid">
           <div className="form-row">
             <label>分类</label>
@@ -180,6 +224,16 @@ function EditForm() {
             onChange={(e) => set("description", e.target.value)}
             placeholder="一句话摘要，显示在列表和搜索"
           />
+          <p
+            className={`field-hint ${
+              form.description.trim().length < 40 ? "field-hint-error" : ""
+            }`}
+          >
+            {form.description.trim().length} / 40 字
+            {form.description.trim().length < 40
+              ? `（还差 ${40 - form.description.trim().length} 字）`
+              : " ✓"}
+          </p>
         </div>
 
         <ContentFields
