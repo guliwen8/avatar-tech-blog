@@ -46,6 +46,7 @@ function EditForm() {
     null,
   );
   const [uploading, setUploading] = useState(false);
+  const [imageBusy, setImageBusy] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
 
@@ -77,7 +78,7 @@ function EditForm() {
   }
 
   async function onSave() {
-    if (uploading) return;
+    if (uploading || imageBusy) return;
     if (!form.title.trim()) {
       alert("请填写标题");
       return;
@@ -198,6 +199,17 @@ function EditForm() {
           }}
           onChange={(value) => set("editorial", value)}
           onAdopt={adopt}
+          onImageBusy={setImageBusy}
+          onCover={(url) => {
+            if (
+              form.cover &&
+              form.cover !== url &&
+              !window.confirm("替换当前文章封面并设为草稿？")
+            )
+              return false;
+            setForm((f) => ({ ...f, cover: url, published: false }));
+            return true;
+          }}
         />
         {beforeEditorial && (
           <button
@@ -268,7 +280,7 @@ function EditForm() {
         <div className="form-actions">
           <button
             className="btn btn-primary"
-            disabled={saving || uploading}
+            disabled={saving || uploading || imageBusy}
             onClick={onSave}
           >
             {uploading

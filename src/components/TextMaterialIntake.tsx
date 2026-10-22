@@ -16,6 +16,8 @@ export function TextMaterialIntake() {
     description: "",
     content: "",
   });
+  const [cover, setCover] = useState("");
+  const [imageBusy, setImageBusy] = useState(false);
   const [saving, setSaving] = useState(false),
     [error, setError] = useState("");
   async function save() {
@@ -29,7 +31,7 @@ export function TextMaterialIntake() {
         date: new Date().toISOString().slice(0, 10),
         category: data.template === "note" ? "随笔" : "教程",
         tags: [],
-        cover: "",
+        cover,
         content: adopted.content,
         published: false,
         is_vip: false,
@@ -57,6 +59,11 @@ export function TextMaterialIntake() {
         value={data}
         current={adopted}
         onChange={setData}
+        onCover={(url) => {
+          setCover(url);
+          return true;
+        }}
+        onImageBusy={setImageBusy}
         onAdopt={(candidate) => {
           setAdopted(candidate);
           setError("");
@@ -70,7 +77,11 @@ export function TextMaterialIntake() {
         </p>
         <button
           className="btn btn-primary"
-          disabled={saving || (!data.source.trim() && !data.candidate?.content)}
+          disabled={
+            saving ||
+            imageBusy ||
+            (!data.source.trim() && !data.candidate?.content)
+          }
           onClick={save}
         >
           {saving ? "保存中…" : "保存草稿并继续编辑"}

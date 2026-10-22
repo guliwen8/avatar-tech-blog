@@ -17,9 +17,26 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const post = await getPostBySlug(decodeURIComponent(slug));
-  return post
-    ? { title: `${post.title} · 阿凡达博客`, description: post.description }
-    : { title: "文章未找到" };
+  if (!post) return { title: "文章未找到" };
+  // og:image 由同目录的 opengraph-image.tsx 自动注入，这里不重复声明。
+  return {
+    title: `${post.title} · 阿凡达博客`,
+    description: post.description,
+    alternates: { canonical: `/posts/${slug}` },
+    openGraph: {
+      type: "article",
+      title: post.title,
+      description: post.description,
+      url: `/posts/${slug}`,
+      publishedTime: post.date,
+      tags: post.tags,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: post.title,
+      description: post.description,
+    },
+  };
 }
 export default async function PostPage({
   params,

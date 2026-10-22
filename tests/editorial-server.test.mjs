@@ -134,6 +134,15 @@ test("服务端兼容请求的输出解析、截断及私网 DNS 拒绝（模拟
   );
   assert.equal(payload.max_completion_tokens, 4096);
   assert.equal(payload.store, false);
+  await requestEditorialAI(
+    { ...config, model: "MiniMax-M2.7" },
+    [{ role: "user", content: "source" }],
+    undefined,
+    deps,
+  );
+  assert.equal(payload.max_completion_tokens, 16384);
+  assert.equal(payload.reasoning_split, true);
+
   await assert.rejects(
     () =>
       requestEditorialAI(config, [], undefined, {
@@ -191,7 +200,7 @@ test("截断、服务错误、无效 JSON 与取消请求都拒绝，不返回�
           }),
         ),
       ),
-    /截断/,
+    /上限.*原始素材保留/,
   );
   await assert.rejects(
     () =>

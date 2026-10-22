@@ -47,3 +47,8 @@ test("封面拒绝后台、混合内容、私网地址，保留站内上传与 H
     "https://images.unsplash.com/photo-test?w=800",
   );
 });
+
+test("受控站内图片地址可用于封面，其他 API 路径仍被拒绝", () => {
+ assert.equal(safeCover("/api/files/12345678-1234-1234-1234-123456789abc"),"/api/files/12345678-1234-1234-1234-123456789abc");
+ assert.equal(safeCover("/api/admin/config"),undefined);
+});

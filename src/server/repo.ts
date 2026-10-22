@@ -45,16 +45,36 @@ export interface SiteModule {
   enabled: boolean;
   sort: number;
 }
+export type OrderStatus =
+  | "pending" // 已下单，等用户付款
+  | "submitted" // 用户点了「我已付款」，等管理员核对
+  | "paid" // 管理员已确认收款，会员已开通
+  | "rejected" // 管理员核对不通过
+  | "refunded" // 已退款
+  | "cancelled"; // 用户或管理员取消
+
 export interface Order {
   id: string;
   plan_id: string;
   plan_name: string;
   amount: number;
   method: string;
-  status: string;
+  status: OrderStatus;
   contact: string;
+  /** 下单的会员账号 ID */
+  member_id: string;
+  /** 6 位付款码，用户填在转账备注里 */
+  pay_code: string;
   created_at: string;
+  submitted_at: string | null;
+  confirmed_at: string | null;
   paid_at: string | null;
+  operated_by: string;
+  order_note: string;
+  refunded_at: string | null;
+  refund_amount: number | null;
+  /** 本单开通后的到期日，退款回滚时用 */
+  granted_until: number | null;
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -238,20 +258,99 @@ export function setSetting(key: string, value: string) {
 function rowToOrder(r: any): Order {
   return r as Order;
 }
-export function createOrder(o: Omit<Order, "created_at" | "paid_at">) {
+export function createOrder(o: {
+  id: string;
+  plan_id: string;
+  plan_name: string;
+  amount: number;
+  method: string;
+  contact?: string;
+  member_id: string;
+  pay_code: string;
+}) {
   getDB()
     .prepare(
-      `INSERT INTO orders (id,plan_id,plan_name,amount,method,status,contact)
-       VALUES (@id,@plan_id,@plan_name,@amount,@method,@status,@contact)`,
+      `INSERT INTO orders (id,plan_id,plan_name,amount,method,status,contact,member_id,pay_code)
+       VALUES (@id,@plan_id,@plan_name,@amount,@method,'pending',@contact,@member_id,@pay_code)`,
     )
-    .run(o);
+    .run({ contact: "", ...o });
 }
-export function markOrderPaid(id: string) {
-  getDB()
-    .prepare(
-      "UPDATE orders SET status='paid', paid_at=datetime('now') WHERE id = ?",
-    )
-    .run(id);
+/** 用户点了「我已付款」，进入待核对队列。只允许从 pending 迁移。 */
+export function markOrderSubmitted(id: string, note = ""): boolean {
+  return (
+    getDB()
+      .prepare(
+        `UPDATE orders SET status='submitted', submitted_at=datetime('now'), order_note=?
+         WHERE id=? AND status='pending'`,
+      )
+      .run(note.slice(0, 500), id).changes > 0
+  );
+}
+/**
+ * 管理员确认收款。
+ * 只允许从 pending / submitted 迁移，且用条件更新保证同一笔不会重复开通。
+ */
+export function markOrderPaid(
+  id: string,
+  opts: { operated_by?: string; note?: string; granted_until?: number } = {},
+): boolean {
+  return (
+    getDB()
+      .prepare(
+        `UPDATE orders SET
+           status='paid',
+           paid_at=datetime('now'),
+           confirmed_at=datetime('now'),
+           operated_by=?,
+           order_note=CASE WHEN ?='' THEN order_note ELSE ? END,
+           granted_until=?
+         WHERE id=? AND status IN ('pending','submitted')`,
+      )
+      .run(
+        (opts.operated_by || "").slice(0, 60),
+        opts.note || "",
+        (opts.note || "").slice(0, 500),
+        opts.granted_until ?? null,
+        id,
+      ).changes > 0
+  );
+}
+/** 管理员核对不通过。 */
+export function markOrderRejected(id: string, note: string): boolean {
+  return (
+    getDB()
+      .prepare(
+        `UPDATE orders SET status='rejected', order_note=?
+         WHERE id=? AND status IN ('pending','submitted')`,
+      )
+      .run(note.slice(0, 500), id).changes > 0
+  );
+}
+/** 退款：记录金额与原因，不改 status 之外的会员期（由调用方回滚）。 */
+export function markOrderRefunded(
+  id: string,
+  amount: number,
+  note: string,
+): boolean {
+  return (
+    getDB()
+      .prepare(
+        `UPDATE orders SET status='refunded', refunded_at=datetime('now'),
+           refund_amount=?, order_note=?
+         WHERE id=? AND status='paid'`,
+      )
+      .run(amount, note.slice(0, 500), id).changes > 0
+  );
+}
+/** 待核对队列：用户已提交、还没确认的订单。 */
+export function listPendingOrders(): Order[] {
+  return (
+    getDB()
+      .prepare(
+        "SELECT * FROM orders WHERE status IN ('pending','submitted') ORDER BY created_at DESC",
+      )
+      .all() as any[]
+  ).map(rowToOrder);
 }
 export function getOrder(id: string): Order | null {
   const r = getDB().prepare("SELECT * FROM orders WHERE id = ?").get(id);

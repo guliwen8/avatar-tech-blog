@@ -129,11 +129,13 @@ export async function requestEditorialAI(
   )
     throw new Error("AI 服务域名解析到了非公网地址，已拒绝连接");
   if (signal?.aborted) throw new Error("请求已取消");
+  // MiniMax reasoning and final JSON share the generation budget.
+  const maxCompletionTokens = config.model.startsWith("MiniMax-") ? 16384 : 4096;
   const payload = JSON.stringify({
     model: config.model,
     messages,
     ...(config.model.startsWith("MiniMax-") ? { reasoning_split: true } : {}),
-    max_completion_tokens: 4096,
+    max_completion_tokens: maxCompletionTokens,
     store: false,
   });
   return new Promise<string>((resolve, reject) => {
@@ -175,7 +177,9 @@ export async function requestEditorialAI(
           try {
             const data = JSON.parse(Buffer.concat(chunks).toString("utf8"));
             if (data.choices?.[0]?.finish_reason === "length")
-              throw new Error("AI 输出被截断，请缩短素材后重试");
+              throw new Error(
+                `AI 输出达到 ${maxCompletionTokens} tokens 上限，候选稿未采用；原始素材保留。请分篇整理后手动重试，不会自动重试扣费`,
+              );
             const text = data.choices?.[0]?.message?.content;
             if (typeof text !== "string") throw new Error("AI 返回格式不兼容");
             resolve(text);
@@ -186,8 +190,8 @@ export async function requestEditorialAI(
       },
     );
     const timer = setTimeout(
-      () => req.destroy(new Error("AI 请求超过 90 秒，请稍后重试")),
-      90000,
+      () => req.destroy(new Error("AI 请求超过 5 分钟，原稿保留；请检查服务状态后手动重试，不会自动重试扣费")),
+      300000,
     );
     const cancel = () => req.destroy(new Error("请求已取消"));
     signal?.addEventListener("abort", cancel, { once: true });

@@ -1,5 +1,8 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { readEditorialResponse } from "@/lib/editorial-response";
+import { ArticleImageWorkbench } from "./ArticleImageWorkbench";
+import { insertArticleImage } from "@/lib/article-images";
 import {
   EDITORIAL_TEMPLATES,
   normalizeEditorial,
@@ -17,9 +20,7 @@ async function call(body: unknown, signal?: AbortSignal) {
     body: JSON.stringify(body),
     signal,
   });
-  const data = await r.json();
-  if (!r.ok) throw new Error(data.error || "处理失败");
-  return data;
+  return readEditorialResponse(r);
 }
 const escape = (text: string) =>
   text.replace(
@@ -34,11 +35,15 @@ export function EditorialWorkbench({
   current,
   onChange,
   onAdopt,
+  onCover,
+  onImageBusy,
 }: {
   value?: EditorialData;
   current: EditorialCandidate;
   onChange: (v: EditorialData) => void;
   onAdopt: (v: EditorialCandidate) => void;
+  onCover: (url: string) => boolean;
+  onImageBusy: (busy: boolean) => void;
 }) {
   const data = normalizeEditorial(value);
   const [busy, setBusy] = useState(false),
@@ -46,6 +51,7 @@ export function EditorialWorkbench({
     [reviewed, setReviewed] = useState(false),
     [doc, setDoc] = useState(""),
     [previewError, setPreviewError] = useState("");
+  const [imageBusy, setImageBusy] = useState(false);
   const controller = useRef<AbortController | null>(null);
   useEffect(() => () => controller.current?.abort(), []);
   const candidate = data.candidate;
@@ -158,7 +164,7 @@ export function EditorialWorkbench({
         <select
           id="editorial-template"
           value={data.template}
-          disabled={busy}
+          disabled={busy || imageBusy}
           onChange={(e) =>
             change({ template: e.target.value as EditorialTemplate })
           }
@@ -173,7 +179,7 @@ export function EditorialWorkbench({
         <select
           id="editorial-style"
           value={data.style || "auto"}
-          disabled={busy}
+          disabled={busy || imageBusy}
           onChange={(e) => change({ style: e.target.value as EditorialStyle })}
         >
           <option value="auto">自动（短素材简洁整理）</option>
@@ -183,7 +189,7 @@ export function EditorialWorkbench({
         <button
           type="button"
           className="btn btn-ghost"
-          disabled={busy || !current.content}
+          disabled={busy || imageBusy || !current.content}
           onClick={() => {
             if (
               data.source &&
@@ -198,6 +204,11 @@ export function EditorialWorkbench({
           从当前正文导入素材
         </button>
       </div>
+      {busy && (
+        <p role="status">
+          AI 正在整理，最长等待 5 分钟。可取消；取消或断线后不会自动重试。
+        </p>
+      )}
       <div className="editorial-columns">
         <div className="editorial-source">
           <label htmlFor="editorial-source">原始素材（仅后台可见）</label>
@@ -205,7 +216,7 @@ export function EditorialWorkbench({
             id="editorial-source"
             value={data.source}
             maxLength={40000}
-            disabled={busy}
+            disabled={busy || imageBusy}
             onChange={(e) => change({ source: e.target.value })}
             placeholder="粘贴杂乱笔记、文章素材。不会自动改写或发布。"
           />
@@ -214,7 +225,7 @@ export function EditorialWorkbench({
             id="editorial-sources"
             value={data.sources}
             maxLength={4000}
-            disabled={busy}
+            disabled={busy || imageBusy}
             onChange={(e) => change({ sources: e.target.value })}
             placeholder="填写来源名称及链接，AI 不会自行访问这些网址。"
           />
@@ -222,7 +233,7 @@ export function EditorialWorkbench({
             <button
               type="button"
               className="btn btn-primary"
-              disabled={busy || !data.source.trim()}
+              disabled={busy || imageBusy || !data.source.trim()}
               onClick={generate}
             >
               {busy ? "AI 整理中…" : "AI 整理成草稿"}
@@ -239,7 +250,7 @@ export function EditorialWorkbench({
             <button
               type="button"
               className="btn btn-ghost"
-              disabled={busy}
+              disabled={busy || imageBusy}
               onClick={() => {
                 if (
                   candidate?.content &&
@@ -271,7 +282,7 @@ export function EditorialWorkbench({
           <input
             id="editorial-title"
             value={candidate?.title || ""}
-            disabled={busy}
+            disabled={busy || imageBusy}
             maxLength={200}
             onChange={(e) => editCandidate({ title: e.target.value })}
           />
@@ -279,7 +290,7 @@ export function EditorialWorkbench({
           <input
             id="editorial-description"
             value={candidate?.description || ""}
-            disabled={busy}
+            disabled={busy || imageBusy}
             maxLength={500}
             onChange={(e) => editCandidate({ description: e.target.value })}
           />
@@ -289,7 +300,7 @@ export function EditorialWorkbench({
           <textarea
             id="editorial-content"
             value={candidate?.content || ""}
-            disabled={busy}
+            disabled={busy || imageBusy}
             maxLength={50000}
             onChange={(e) => editCandidate({ content: e.target.value })}
             placeholder="AI 结果或模板结构会出现在这里，当前文章正文不会被覆盖。"
@@ -312,7 +323,7 @@ export function EditorialWorkbench({
             <input
               type="checkbox"
               checked={reviewed}
-              disabled={busy || !candidate}
+              disabled={busy || imageBusy || !candidate}
               onChange={(e) => setReviewed(e.target.checked)}
             />
             我已核对事实、命令、链接及来源，确认采用
@@ -322,6 +333,7 @@ export function EditorialWorkbench({
             className="btn btn-primary"
             disabled={
               busy ||
+              imageBusy ||
               !reviewed ||
               !candidate?.title.trim() ||
               !candidate?.content.trim()
@@ -337,6 +349,26 @@ export function EditorialWorkbench({
           {error}
         </p>
       )}
+      <ArticleImageWorkbench
+        article={candidate || current}
+        images={data.images || []}
+        disabled={busy}
+        onBusy={(value) => {
+          setImageBusy(value);
+          onImageBusy(value);
+        }}
+        onImages={(images) => change({ images })}
+        onCover={(image) => onCover(image.url)}
+        onInsert={(image) => {
+          const draft = candidate || current;
+          change({
+            candidate: {
+              ...draft,
+              content: insertArticleImage(draft.content, image),
+            },
+          });
+        }}
+      />
       <div className="editorial-preview">
         <h3>候选稿页面预览</h3>
         {previewError ? (

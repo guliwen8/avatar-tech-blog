@@ -8,9 +8,21 @@ import { listModules, getSettings } from "@/server/repo";
 
 export const dynamic = "force-dynamic";
 
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL || "https://blog.zgyun.com.cn";
+
 export const metadata: Metadata = {
+  // 社交平台要求 og:image 是绝对地址，必须提供 metadataBase。
+  metadataBase: new URL(SITE_URL),
   title: "阿凡达的技术博客",
   description: "分享技术教程、折腾笔记与踩坑经验",
+  openGraph: {
+    type: "website",
+    siteName: "阿凡达的技术博客",
+    locale: "zh_CN",
+    url: SITE_URL,
+  },
+  twitter: { card: "summary_large_image" },
 };
 
 export default async function RootLayout({

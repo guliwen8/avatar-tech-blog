@@ -12,6 +12,7 @@ const MENU = [
   { href: "/admin/members", ico: "👤", label: "读者与会员" },
   { href: "/admin/consultations", ico: "💬", label: "咨询管理" },
   { href: "/admin/orders", ico: "🧾", label: "订单记录" },
+  { href: "/admin/payments", ico: "💰", label: "收款与订单" },
   { href: "/admin/files", ico: "📁", label: "文件管理" },
   { href: "/admin/ads", ico: "📢", label: "广告位" },
   { href: "/admin/modules", ico: "🧩", label: "结构模块" },

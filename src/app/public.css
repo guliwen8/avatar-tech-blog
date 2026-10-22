@@ -2385,3 +2385,34 @@ button {
 .post-grid .entry-meta { margin-top: auto; }
 .catalog-search-submit { display: inline-flex; align-items: center; justify-content: center; padding: 2px; border: 0; background: transparent; color: inherit; cursor: pointer; flex-shrink: 0; }
 .catalog-search-submit:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
+
+/* ===== 扫码支付弹层 ===== */
+.pay-overlay {
+  position: fixed; inset: 0; background: rgba(8, 20, 30, 0.55);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px; z-index: 90;
+}
+.pay-dialog {
+  background: #fff; border-radius: 14px; padding: 24px;
+  max-width: 520px; width: 100%; max-height: 90vh; overflow: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.28);
+}
+.pay-dialog h3 { margin: 0 0 8px; }
+.pay-code-box {
+  display: flex; align-items: center; gap: 10px;
+  background: #f2f6fa; border-radius: 8px; padding: 10px 14px; margin: 12px 0;
+}
+.pay-code-box .pay-code {
+  font-family: ui-monospace, monospace; font-size: 22px;
+  letter-spacing: 4px; font-weight: 700; color: #0d5f80;
+}
+.pay-qrs { display: flex; gap: 20px; justify-content: center; margin: 16px 0; flex-wrap: wrap; }
+.pay-qrs figure { margin: 0; text-align: center; }
+.pay-qrs img { border-radius: 8px; border: 1px solid #e3e8ee; display: block; }
+.pay-qrs figcaption { font-size: 13px; color: #556; margin-top: 6px; }
+.pay-dialog .row { display: flex; gap: 10px; margin-top: 16px; }
+.pay-done { color: #1a7f4b; font-weight: 600; }
+@media (max-width: 480px) {
+  .pay-qrs { gap: 12px; }
+  .pay-qrs img { width: 140px; height: 140px; }
+}

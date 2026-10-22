@@ -1,5 +1,6 @@
 "use client";
 import { useCallback, useEffect, useState, useRef } from "react";
+import { WebMaterialIntake } from "@/components/WebMaterialIntake";
 import { TextMaterialIntake } from "@/components/TextMaterialIntake";
 import { AdminShell, useAdminReady } from "../AdminShell";
 import { EDITORIAL_TEMPLATES } from "@/lib/editorial";
@@ -420,7 +421,8 @@ function Imports() {
 }
 function Intake() {
   const [view, setView] = useState("text"),
-    [videoOpened, setVideoOpened] = useState(false);
+    [videoOpened, setVideoOpened] = useState(false),
+    [webOpened, setWebOpened] = useState(false);
   return (
     <>
       <div className="panel">
@@ -431,6 +433,16 @@ function Intake() {
             onClick={() => setView("text")}
           >
             文字与文档素材
+          </button>
+          <button
+            className="btn btn-ghost"
+            aria-pressed={view === "web"}
+            onClick={() => {
+              setWebOpened(true);
+              setView("web");
+            }}
+          >
+            网页与 RSS
           </button>
           <button
             className="btn btn-ghost"
@@ -447,6 +459,11 @@ function Intake() {
       <div hidden={view !== "text"}>
         <TextMaterialIntake />
       </div>
+      {webOpened && (
+        <div hidden={view !== "web"}>
+          <WebMaterialIntake />
+        </div>
+      )}
       {videoOpened && (
         <div hidden={view !== "video"}>
           <Imports />

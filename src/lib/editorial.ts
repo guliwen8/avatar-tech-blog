@@ -1,3 +1,5 @@
+// @ts-ignore Native Node test runner.
+import { normalizeArticleImage, type ArticleImage } from "./article-images.ts";
 export const EDITORIAL_TEMPLATES = {
   tutorial: "技术教程",
   tool: "工具介绍",
@@ -12,6 +14,7 @@ export interface EditorialCandidate {
 }
 export type EditorialStyle = "auto" | "concise" | "complete";
 export interface EditorialData {
+  images?: ArticleImage[];
   style?: EditorialStyle;
   source: string;
   template: EditorialTemplate;
@@ -47,7 +50,15 @@ export function normalizeEditorial(raw: unknown): EditorialData {
       content: limited(c.content, 50000, "候选正文"),
     };
   }
+  if (
+    r.images !== undefined &&
+    (!Array.isArray(r.images) || r.images.length > 12)
+  )
+    throw new Error("每篇文章最多保留 12 张候选图片");
   return {
+    ...(Array.isArray(r.images)
+      ? { images: r.images.map(normalizeArticleImage) }
+      : {}),
     style: style as EditorialStyle,
     source: limited(r.source, 40000, "原始素材"),
     template: template as EditorialTemplate,

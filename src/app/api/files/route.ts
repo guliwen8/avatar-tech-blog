@@ -51,9 +51,9 @@ export async function POST(req: NextRequest) {
   if (!actor.admin && !actor.memberId)
     return NextResponse.json({ error: "请先登录" }, { status: 401 });
   const purpose = req.nextUrl.searchParams.get("purpose");
-  if (purpose !== "post" && purpose !== "ticket")
+  if (purpose !== "post" && purpose !== "ticket" && purpose !== "payment")
     return NextResponse.json({ error: "上传用途无效" }, { status: 400 });
-  if (purpose === "post" && !actor.admin)
+  if (purpose !== "ticket" && !actor.admin)
     return NextResponse.json({ error: "请使用管理员账号" }, { status: 403 });
   if (!req.body)
     return NextResponse.json({ error: "请选择文件" }, { status: 400 });

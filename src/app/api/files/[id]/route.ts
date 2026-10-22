@@ -9,6 +9,7 @@ import { sameOrigin } from "@/server/member-session";
 import {
   getPrivateFile,
   fileReadable,
+  fileCacheScope,
   parseRange,
   deletePrivateFile,
   FileError,
@@ -57,17 +58,27 @@ async function serve(req: NextRequest, { params }: Context, head = false) {
   );
   const inline =
     file.mime.startsWith("video/") || file.mime.startsWith("image/");
+  // 公开配图：UUID 文件名、内容写入后不再修改，因此可以 immutable 长缓存；
+  // 其余（草稿、会员专属、工单附件）保持 private, no-store。
+  const scope = fileCacheScope(db, file);
   const headers: Record<string, string> = {
     "Content-Type": file.mime,
     "Content-Length": String(end - start + 1),
     "Accept-Ranges": "bytes",
-    "Cache-Control": "private, no-store",
-    Vary: "Cookie",
+    "Cache-Control":
+      scope === "public"
+        ? "public, max-age=31536000, immutable"
+        : "private, no-store",
+    Vary: scope === "public" ? "Accept-Encoding" : "Cookie",
     "X-Content-Type-Options": "nosniff",
     "Cross-Origin-Resource-Policy": "same-origin",
     "Content-Security-Policy": "default-src 'none'; sandbox",
     "Content-Disposition": `${inline ? "inline" : "attachment"}; filename="download"; filename*=UTF-8''${encoded}`,
   };
+  if (scope === "public") {
+    headers.ETag = `"${file.id}"`;
+    headers["Last-Modified"] = new Date(file.created_at).toUTCString();
+  }
   if (header) headers["Content-Range"] = `bytes ${start}-${end}/${file.size}`;
   return new NextResponse(
     head

@@ -15,6 +15,8 @@ import {
   type Post,
 } from "@/server/repo";
 import { requireAuth, toSlug } from "@/server/guard";
+import { ensurePostCover } from "@/server/cover-job";
+import { gateMessage, qualityGate } from "@/lib/quality-gate";
 
 export const dynamic = "force-dynamic";
 
@@ -73,9 +75,18 @@ export async function POST(req: NextRequest) {
     is_vip: body.is_vip ?? false,
     views: body.views ?? 0,
   };
+  // 发布闸门：只拦「发布」，草稿保存不受影响。
+  const report = qualityGate(post, { published: post.published });
+  const forcePublish = (body as Record<string, unknown>).forcePublish === true;
+  if (!report.pass && !forcePublish) {
+    return NextResponse.json(
+      { error: `发布检查未通过：${gateMessage(report)}`, gates: report.gates },
+      { status: 400 },
+    );
+  }
   try {
     getDB().transaction(() => {
-      bindPostFiles(getDB(), post.slug, post.details);
+      bindPostFiles(getDB(), post.slug, post.details, post);
       upsertPost(post);
     })();
   } catch (error) {
@@ -86,7 +97,12 @@ export async function POST(req: NextRequest) {
       { status: error instanceof FileError ? error.status : 500 },
     );
   }
-  return NextResponse.json({ ok: true, slug: post.slug });
+  // 没有封面时后台补一张，不阻塞保存响应；失败不影响本次保存结果。
+  const coverPending = !post.cover;
+  if (coverPending) {
+    void ensurePostCover(post.slug).catch(() => {});
+  }
+  return NextResponse.json({ ok: true, slug: post.slug, coverPending });
 }
 
 // 删除文章

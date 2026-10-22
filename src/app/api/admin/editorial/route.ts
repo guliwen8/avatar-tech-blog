@@ -1,3 +1,4 @@
+import { editorialStream } from "@/server/editorial-stream";
 import { generateEditorial } from "@/server/editorial-generator";
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/server/guard";
@@ -5,11 +6,11 @@ import { sameOrigin, fail } from "@/server/member-session";
 import { getDB } from "@/server/db";
 import { rateLimit } from "@/server/community";
 import { renderArticleMarkdown } from "@/server/article-renderer";
-import {
-  normalizeEditorial,
-} from "@/lib/editorial";
+import { normalizeEditorial } from "@/lib/editorial";
 import { getAIConfig } from "@/server/editorial-ai";
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+export const maxDuration = 330;
 export async function POST(req: NextRequest) {
   const guard = await requireAuth();
   if (guard) return guard;
@@ -40,7 +41,20 @@ export async function POST(req: NextRequest) {
         { error: "每小时最多生成 10 次，请稍后重试" },
         { status: 429 },
       );
-    const candidate = await generateEditorial(config, input, req.signal);
-    return NextResponse.json(candidate, {headers:{"Cache-Control":"private, no-store"}});
-  } catch (error) { return fail(error); }
+    return new Response(
+      editorialStream(
+        (signal) => generateEditorial(config, input, signal),
+        req.signal,
+      ),
+      {
+        headers: {
+          "Content-Type": "application/x-ndjson; charset=utf-8",
+          "Cache-Control": "private, no-store, no-transform",
+          "X-Accel-Buffering": "no",
+        },
+      },
+    );
+  } catch (error) {
+    return fail(error);
+  }
 }

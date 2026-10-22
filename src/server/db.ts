@@ -1,3 +1,4 @@
+import {migrateWebImports} from "./web-imports";
 import { migrateLocalVideos } from "./local-video";
 import { migrateVideoJobs } from "./video-jobs";
 import { migrateEditorial } from "./editorial-migration";
@@ -113,10 +114,39 @@ function init(db: Database.Database) {
   migratePostDetails(db);
   migrateEditorial(db);
   migrateVideoJobs(db);
+  migrateWebImports(db);
   migrateLocalVideos(db);
   migrateCommunity(db);
   migrateFiles(db);
+  migrateOrders(db);
   seed(db);
+}
+
+// 收费模块：订单表补充对账、退款与操作人字段（兼容旧库）
+function migrateOrders(db: Database.Database) {
+  const names = (
+    db.prepare("PRAGMA table_info(orders)").all() as { name: string }[]
+  ).map((c) => c.name);
+  const add = (name: string, ddl: string) => {
+    if (!names.includes(name))
+      db.exec(`ALTER TABLE orders ADD COLUMN ${name} ${ddl}`);
+  };
+  // 用户填在转账备注里的 6 位付款码，是人工对账的锚点
+  add("pay_code", "TEXT NOT NULL DEFAULT ''");
+  // 下单的会员账号：确认收款时据此开通，不能靠邮箱猜
+  add("member_id", "TEXT NOT NULL DEFAULT ''");
+  // 用户点了「我已付款」的时间
+  add("submitted_at", "TEXT");
+  // 管理员确认收款的时间与操作人
+  add("confirmed_at", "TEXT");
+  add("operated_by", "TEXT NOT NULL DEFAULT ''");
+  // 备注：转账凭证号、退款原因等
+  add("order_note", "TEXT NOT NULL DEFAULT ''");
+  // 退款
+  add("refunded_at", "TEXT");
+  add("refund_amount", "REAL");
+  // 本单开通后的到期日，退款回滚时用
+  add("granted_until", "INTEGER");
 }
 
 // 兼容旧数据库：缺失的新列自动补上（不会丢数据）

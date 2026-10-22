@@ -33,6 +33,12 @@ function publicHttps(raw: string): URL | undefined {
 export function safeCover(raw?: string): string | undefined {
   if (!raw) return;
   if (
+    /^\/api\/files\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(
+      raw,
+    )
+  )
+    return raw;
+  if (
     /^\/uploads\/[a-zA-Z0-9_./%-]+\.(png|jpe?g|webp|gif|avif)$/i.test(raw) &&
     !raw.includes("..")
   )

@@ -12,7 +12,7 @@ export interface FileActor {
 }
 export interface PrivateFile {
   id: string;
-  purpose: "post" | "ticket";
+  purpose: "post" | "ticket" | "payment";
   name: string;
   mime: string;
   size: number;
@@ -117,7 +117,7 @@ export async function uploadPrivateFile(
   root: string,
   input: {
     name: string;
-    purpose: "post" | "ticket";
+    purpose: "post" | "ticket" | "payment";
     ticketId?: string;
     actor: FileActor;
     body: ReadableStream<Uint8Array>;
@@ -129,9 +129,13 @@ export async function uploadPrivateFile(
   if (!name || name.length > 180 || /[\/\\\x00-\x1f\x7f]/.test(name))
     throw new FileError("文件名无效");
   const mime = format(name);
-  if (!mime || (input.purpose === "ticket" && !mime.startsWith("image/")))
+  if (
+    !mime ||
+    ((input.purpose === "ticket" || input.purpose === "payment") &&
+      !mime.startsWith("image/"))
+  )
     throw new FileError("不支持此文件类型", 415);
-  if (input.purpose === "post" && !input.actor.admin)
+  if (input.purpose !== "ticket" && !input.actor.admin)
     throw new FileError("请使用管理员账号上传", 403);
   const max =
     input.maxBytes ??
@@ -241,11 +245,38 @@ export async function uploadPrivateFile(
     throw e;
   }
 }
+export function articleImageIds(article?: {
+  cover?: string;
+  content?: string;
+}) {
+  const ids = new Set<string>();
+  const cover = fileIdFromUrl(article?.cover);
+  if (cover) ids.add(cover);
+  for (const match of (article?.content || "").matchAll(
+    /!\[[^\]\n]*\]\(\/api\/files\/([a-f0-9-]{36})\)/g,
+  ))
+    if (fileIdFromUrl("/api/files/" + match[1])) ids.add(match[1]);
+  return ids;
+}
 export function bindPostFiles(
   db: Database.Database,
   slug: string,
   details?: { videoUrl?: string; downloadUrl?: string },
+  article?: { cover: string; content: string },
 ) {
+  for (const id of articleImageIds(article)) {
+    const f = getPrivateFile(db, id);
+    if (
+      !f ||
+      f.status !== "ready" ||
+      f.purpose !== "post" ||
+      !f.mime.startsWith("image/")
+    )
+      throw new FileError("文章图片不存在或不是图片文件", 400);
+    if (f.post_slug && f.post_slug !== slug)
+      throw new FileError("图片已绑定另一篇文章，请上传副本", 409);
+    db.prepare("UPDATE private_files SET post_slug=? WHERE id=?").run(slug, id);
+  }
   for (const key of ["videoUrl", "downloadUrl"] as const) {
     const id = fileIdFromUrl(details?.[key]);
     if (!id) continue;
@@ -267,6 +298,8 @@ export function fileReadable(
 ): boolean {
   if (file.status !== "ready") return false;
   if (actor.admin) return true;
+  // 收款码是给人扫码付款用的，必须公开可读
+  if (file.purpose === "payment") return true;
   if (file.purpose === "ticket") {
     const t = db
       .prepare("SELECT member_id FROM consultations WHERE id=?")
@@ -275,13 +308,24 @@ export function fileReadable(
   }
   if (!file.post_slug) return false;
   const p = db
-    .prepare("SELECT published,details FROM posts WHERE slug=?")
-    .get(file.post_slug) as { published: number; details: string } | undefined;
+    .prepare("SELECT * FROM posts WHERE slug=?")
+    .get(file.post_slug) as
+    | { published: number; details: string; cover?: string; content?: string }
+    | undefined;
   if (!p?.published) return false;
   try {
     const d = JSON.parse(p.details || "{}"),
       url = "/api/files/" + file.id;
-    if (d.videoUrl !== url && d.downloadUrl !== url) return false;
+    if (file.mime.startsWith("image/") && p.cover === url) return true;
+    if (
+      d.videoUrl !== url &&
+      d.downloadUrl !== url &&
+      !(
+        file.mime.startsWith("image/") &&
+        articleImageIds({ content: p.content }).has(file.id)
+      )
+    )
+      return false;
     const policy = d.access || "public";
     return (
       policy === "public" ||
@@ -291,6 +335,38 @@ export function fileReadable(
     );
   } catch {
     return false;
+  }
+}
+/**
+ * 判定一个文件能否被公开缓存。
+ *
+ * 只有「已发布文章的配图，且访问策略为 public」才允许公共缓存；
+ * 会员专属内容、草稿、工单附件一律返回 private，避免共享缓存泄露。
+ */
+export function fileCacheScope(
+  db: Database.Database,
+  file: PrivateFile,
+): "public" | "private" {
+  // 收款码公开可读且内容不变，可长期缓存
+  if (file.purpose === "payment" && file.mime.startsWith("image/"))
+    return "public";
+  if (file.purpose !== "post" || !file.mime.startsWith("image/"))
+    return "private";
+  if (!file.post_slug) return "private";
+  const p = db
+    .prepare("SELECT published,details,cover FROM posts WHERE slug=?")
+    .get(file.post_slug) as
+    | { published: number; details: string; cover?: string }
+    | undefined;
+  if (!p?.published) return "private";
+  const url = "/api/files/" + file.id;
+  // 封面在 fileReadable 中无条件放行，因此可公开缓存
+  if (p.cover === url) return "public";
+  try {
+    const details = JSON.parse(p.details || "{}") as { access?: string };
+    return (details.access || "public") === "public" ? "public" : "private";
+  } catch {
+    return "private";
   }
 }
 export async function deletePrivateFile(
@@ -308,14 +384,16 @@ export async function deletePrivateFile(
   }
   if (f.purpose === "post" && f.post_slug) {
     const p = db
-      .prepare("SELECT details FROM posts WHERE slug=?")
-      .get(f.post_slug) as { details: string } | undefined;
+      .prepare("SELECT * FROM posts WHERE slug=?")
+      .get(f.post_slug) as
+      { details: string; cover?: string; content?: string } | undefined;
     if (p) {
       try {
         const d = JSON.parse(p.details || "{}");
         if (
           d.videoUrl === "/api/files/" + id ||
-          d.downloadUrl === "/api/files/" + id
+          d.downloadUrl === "/api/files/" + id ||
+          articleImageIds(p).has(id)
         )
           throw new FileError("请先从文章中移除此文件链接", 409);
       } catch (e) {
