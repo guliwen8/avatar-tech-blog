@@ -93,6 +93,43 @@ export function transcriptText(raw) {
     throw new NeedsTranscript("没有获得足够的语音内容，请补充字幕");
   return text;
 }
+/**
+ * 把 yt-dlp 的报错翻译成用户能直接照做的提示。
+ *
+ * 之前所有失败都归成「可能无字幕、需要登录或网络不可达」，导致链接写错时
+ * 用户跑去补字幕，白费功夫。这里按 stderr 关键字区分具体原因。
+ */
+export function classifyFailure(raw) {
+  const t = String(raw || "");
+  if (
+    /This video may be deleted or geo-restricted|Video unavailable|does not exist|is not available|HTTP Error 404|Status code: 404|啥都木有/i.test(
+      t,
+    )
+  )
+    return "该视频不存在、已删除或转为私密，请检查链接或换一个视频";
+  if (
+    /Private video|login required|Sign in to confirm|need to log in|大会员|需要登录|premium/i.test(
+      t,
+    )
+  )
+    return "该视频需要登录或会员权限，当前环境无法读取，请换一个公开视频";
+  if (
+    /Unable to download webpage|Failed to resolve|Temporary failure in name resolution|Connection refused|Connection reset|Network is unreachable|timed out|Timeout/i.test(
+      t,
+    )
+  )
+    return "无法访问视频网站，请检查服务器网络后重试";
+  if (
+    /Unsupported URL|is not a valid URL|Unsupported site|no suitable extractor/i.test(
+      t,
+    )
+  )
+    return "链接格式不受支持，请使用完整的视频页面地址";
+  if (/no subtitles|There are no subtitles|captions/i.test(t))
+    return "该视频没有可读取的字幕，请补充字幕或开启语音转写";
+  return "平台内容无法读取，请确认视频可公开访问；也可以补充字幕后重试";
+}
+
 export function runTool(
   command,
   args,
@@ -104,6 +141,7 @@ export function runTool(
       return;
     }
     let output = "",
+      errText = "",
       bytes = 0;
     const child = spawn(command, args, {
       stdio: ["ignore", "pipe", "pipe"],
@@ -135,7 +173,9 @@ export function runTool(
       }
       output += buf.toString();
     });
-    child.stderr.on("data", () => {});
+    child.stderr.on("data", (buf) => {
+      if (errText.length < 4000) errText += buf.toString();
+    });
     child.on("error", () =>
       reject(new NeedsTranscript("视频采集工具不可用，请补充字幕或检查部署")),
     );
@@ -143,12 +183,7 @@ export function runTool(
       clearTimeout(timer);
       signal?.removeEventListener("abort", cancel);
       if (code === 0) resolve(output);
-      else
-        reject(
-          new NeedsTranscript(
-            "平台内容无法读取，可能无字幕、需要登录或网络不可达；请补充字幕，不会根据标题猜测内容",
-          ),
-        );
+      else reject(new NeedsTranscript(classifyFailure(errText)));
     });
   });
 }
