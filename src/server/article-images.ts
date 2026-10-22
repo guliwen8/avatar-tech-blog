@@ -6,7 +6,8 @@ import { getAIConfig, providerUrl } from "./editorial-ai.ts";
 // @ts-ignore Native test runner.
 import { uploadPrivateFile } from "./private-files.ts";
 // @ts-ignore Native test runner.
-import { normalizeArticleImage } from "../lib/article-images.ts";
+// @ts-ignore Native test runner.
+import { normalizeArticleImage, minimalImagePrompt } from "../lib/article-images.ts";
 import type { ArticleImage } from "../lib/article-images";
 import { publicRequest } from "./video-http.mjs";
 export interface ImageConfig {
@@ -124,32 +125,50 @@ export async function generateArticleImage(
     r.section.length > 200
   )
     throw Error("图片描述或用途格式不正确");
-  const result = await deps.request(base + "/image_generation", {
-    method: "POST",
-    redirects: 0,
-    signal,
-    maxBytes: 1024 * 1024,
-    timeoutMs: 90000,
-    headers: {
-      Authorization: "Bearer " + config.apiKey,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "image-01",
-      prompt: r.prompt,
-      aspect_ratio: "16:9",
-      response_format: "url",
-      n: 1,
-      prompt_optimizer: false,
-    }),
-  });
-  let data;
+  const requestImage = async (prompt: string): Promise<string> => {
+    const result = await deps.request(base + "/image_generation", {
+      method: "POST",
+      redirects: 0,
+      signal,
+      maxBytes: 1024 * 1024,
+      timeoutMs: 90000,
+      headers: {
+        Authorization: "Bearer " + config.apiKey,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "image-01",
+        prompt,
+        aspect_ratio: "16:9",
+        response_format: "url",
+        n: 1,
+        prompt_optimizer: false,
+      }),
+    });
+    let data;
+    try {
+      data = JSON.parse(result.body.toString("utf8"));
+    } catch {
+      throw Error("图像服务返回格式不正确");
+    }
+    return imageResultUrl(data);
+  };
+
+  let imageUrl: string;
   try {
-    data = JSON.parse(result.body.toString("utf8"));
-  } catch {
-    throw Error("图像服务返回格式不正确");
+    imageUrl = await requestImage(r.prompt);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+    // 1026 是输入内容未通过审核。用极简 prompt 自动重试一次（仅一次），
+    // 避免用户对着长描述反复手改；其它错误码照常抛出，不做重试。
+    if (!message.includes("错误码 1026")) throw error;
+    if (signal?.aborted) throw Error("图片生成已取消");
+    imageUrl = await requestImage(
+      minimalImagePrompt({ title: r.caption || r.section || "" }),
+    );
   }
-  const image = await deps.request(imageResultUrl(data), {
+
+  const image = await deps.request(imageUrl, {
     signal,
     maxBytes: 12 * 1024 * 1024,
     timeoutMs: 30000,

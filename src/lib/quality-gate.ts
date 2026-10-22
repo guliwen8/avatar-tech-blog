@@ -62,7 +62,8 @@ export function minChinese(kind: ContentDetails["kind"] | undefined): number {
     case "project":
       return 200;
     default:
-      return 800;
+      // 文章 500 字：够撑起一个完整技术主题，又不至于把作者卡死
+      return 500;
   }
 }
 
