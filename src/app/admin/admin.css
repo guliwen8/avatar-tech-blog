@@ -514,3 +514,10 @@
   background: #f2f6fa; padding: 2px 8px; border-radius: 4px;
   font-family: ui-monospace, monospace; letter-spacing: 2px; font-weight: 700;
 }
+.payment-desk .qr-remove {
+  display: inline-block; margin-top: 8px; margin-left: 8px; padding: 6px 12px;
+  cursor: pointer; border: 1px solid #e3b4ad; color: #c0392b;
+  background: #fff; border-radius: 6px; font-size: 13px;
+}
+.payment-desk .qr-remove:hover { background: #fdf1ef; }
+.payment-desk .qr-remove:disabled { opacity: .5; cursor: not-allowed; }

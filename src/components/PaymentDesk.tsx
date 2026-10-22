@@ -112,6 +112,44 @@ export function PaymentDesk() {
     }
   }
 
+  async function removeQr(kind: "wechat" | "alipay") {
+    const url = kind === "wechat" ? cfg?.wechatQr : cfg?.alipayQr;
+    if (!url) return;
+    const label = kind === "wechat" ? "微信" : "支付宝";
+    const other = kind === "wechat" ? cfg?.alipayQr : cfg?.wechatQr;
+    const tip = other
+      ? `确定删除${label}收款码？另一张仍会保留。`
+      : `这是最后一张收款码，删除后将同时关闭在线开通，用户无法再扫码支付。确定继续？`;
+    if (!window.confirm(tip)) return;
+
+    setBusy("del-" + kind);
+    setErr("");
+    setMsg("");
+    try {
+      const payload: Record<string, unknown> = {
+        [kind === "wechat" ? "wechatQr" : "alipayQr"]: "",
+      };
+      // 删掉最后一张码时必须同步关闭收款，否则接口会以“至少一张”拒绝
+      if (!other) payload.enabled = false;
+      await api("/api/admin/payment-config", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      // 配置已清空，再删物理文件，避免留下指向坏图的引用
+      const id = url.split("/").pop();
+      if (id) {
+        await fetch("/api/files/" + id, { method: "DELETE" }).catch(() => {});
+      }
+      setMsg(`${label}收款码已删除${other ? "" : "，在线开通已关闭"}`);
+      await load();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "删除失败");
+    } finally {
+      setBusy("");
+    }
+  }
+
   async function act(action: string, id: string, extra: object = {}) {
     setBusy(id + action);
     setErr("");
@@ -171,6 +209,16 @@ export function PaymentDesk() {
                     }}
                   />
                 </label>
+                {url && (
+                  <button
+                    type="button"
+                    className="qr-remove"
+                    disabled={!!busy}
+                    onClick={() => void removeQr(kind)}
+                  >
+                    {busy === "del-" + kind ? "删除中…" : "删除"}
+                  </button>
+                )}
               </div>
             );
           })}
