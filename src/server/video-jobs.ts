@@ -1,6 +1,17 @@
 import type Database from "better-sqlite3";
 import crypto from "node:crypto";
 import { classifyVideo } from "./video-source.mjs";
+import { slugify } from "../lib/slug";
+
+/** 用拼音生成可读 slug；重名加 -2、-3，避免 upsert 覆盖已有文章。 */
+function uniqueSlug(db: Database.Database, base: string): string {
+  const root = base || "video-" + Date.now();
+  let slug = root;
+  let n = 2;
+  while (db.prepare("SELECT 1 FROM posts WHERE slug=?").get(slug))
+    slug = `${root}-${n++}`;
+  return slug;
+}
 export interface VideoInput {
   url: string;
   template: string;
@@ -189,8 +200,11 @@ export async function runVideoJob(
       if (publicUrl && classifyVideo(source.url).kind === "mp4")
         publicUrl.search = "";
       const sources = `来源视频：${source.title}\n${publicUrl?.href || "本地上传视频（后台私有素材）"}\n整理依据：${source.method === "subtitles" ? "平台字幕" : source.method === "asr" ? "语音转写" : "用户补充字幕"}；未核验视频画面。`;
+      // 公网视频可以直接发布成「视频」内容，并带上原平台链接；
+      // 本地上传的视频目前没有可播放地址，先按普通文章存，避免发布时被闸门拦下。
+      const isPublicVideo = !!publicUrl;
       const slug = deps.persist({
-        slug: "video-source-" + job.id,
+        slug: uniqueSlug(db, slugify(candidate.title)),
         title: candidate.title,
         description: "",
         date: new Date().toISOString().slice(0, 10),
@@ -201,7 +215,9 @@ export async function runVideoJob(
         published: false,
         is_vip: false,
         views: 0,
-        details: { kind: "article", access: "public" },
+        details: isPublicVideo
+          ? { kind: "video", access: "public", sourceUrl: publicUrl.href }
+          : { kind: "article", access: "public" },
         editorial: {
           source: source.text,
           sources,
@@ -215,6 +231,11 @@ export async function runVideoJob(
           warnings: [
             ...(candidate.warnings || []),
             "本候选稿仅依据字幕或语音内容，视频画面和屏幕操作需人工核验。",
+            ...(isPublicVideo
+              ? []
+              : [
+                  "本地上传的视频暂无在线播放地址：发布前请在「内容资料」里填写播放地址，否则不会出现在视频栏目。",
+                ]),
           ],
         },
       });
