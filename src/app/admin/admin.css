@@ -521,3 +521,13 @@
 }
 .payment-desk .qr-remove:hover { background: #fdf1ef; }
 .payment-desk .qr-remove:disabled { opacity: .5; cursor: not-allowed; }
+
+/* ===== 封面字段 ===== */
+.cover-field .cover-input-row { display: flex; gap: 8px; align-items: center; }
+.cover-field .cover-input-row input { flex: 1; min-width: 0; }
+.cover-field .cover-input-row .btn { white-space: nowrap; }
+.cover-preview {
+  display: block; margin-top: 10px; max-width: 320px; width: 100%;
+  aspect-ratio: 16 / 9; object-fit: cover;
+  border: 1px solid #e3e8ee; border-radius: 8px; background: #f7fafc;
+}

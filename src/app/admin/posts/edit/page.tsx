@@ -3,6 +3,7 @@
 import { EditorialWorkbench } from "@/components/EditorialWorkbench";
 import type { EditorialCandidate } from "@/lib/editorial";
 import { ContentFields } from "@/components/ContentFields";
+import { CoverField } from "@/components/CoverField";
 import { validateDetailsForPublication } from "@/lib/content-details";
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
@@ -165,14 +166,11 @@ function EditForm() {
               placeholder="如：Docker, 群晖"
             />
           </div>
-          <div className="form-row">
-            <label>封面图地址（可留空，自动生成渐变封面）</label>
-            <input
-              value={form.cover}
-              onChange={(e) => set("cover", e.target.value)}
-              placeholder="https://..."
-            />
-          </div>
+          <CoverField
+            value={form.cover}
+            onChange={(url) => set("cover", url)}
+            onUploadingChange={setUploading}
+          />
         </div>
 
         <div className="form-row">
